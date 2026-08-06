@@ -109,6 +109,63 @@ for (const source of inventoriedSources) {
   if (!checkedInSources.includes(source)) fail(`draft inventory points to absent source: ${source}`);
 }
 
+const candidatesRoot = path.join(root, 'modules');
+const candidateIds = new Set();
+let candidateCount = 0;
+if (fs.existsSync(candidatesRoot)) {
+  for (const entry of fs.readdirSync(candidatesRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const relativeDir = path.posix.join('modules', entry.name);
+    const metadataPath = path.join(relativeDir, 'module.json');
+    if (!fs.existsSync(path.join(root, metadataPath))) {
+      fail(`${relativeDir}: missing module.json`);
+      continue;
+    }
+
+    candidateCount += 1;
+    const candidate = readJson(metadataPath);
+    for (const field of ['id', 'name', 'version', 'author', 'license', 'description', 'source', 'artifact', 'channel', 'installable', 'upstreamSdk']) {
+      if (candidate[field] === undefined || candidate[field] === null || candidate[field] === '') {
+        fail(`${metadataPath}: missing ${field}`);
+      }
+    }
+    if (candidateIds.has(candidate.id)) fail(`duplicate candidate id: ${candidate.id}`);
+    if (installableIds.has(candidate.id)) {
+      fail(`${candidate.id}: candidate metadata cannot duplicate an installable catalog entry`);
+    }
+    candidateIds.add(candidate.id);
+
+    if (candidate.installable !== false || candidate.channel !== 'build-only') {
+      fail(`${candidate.id}: unvalidated candidate must remain build-only and non-installable`);
+    }
+    if (!candidate.upstreamSdk || !/^[0-9a-f]{40}$/.test(candidate.upstreamSdk.commit || '')) {
+      fail(`${candidate.id}: invalid pinned upstream SDK commit`);
+    }
+    if (!Array.isArray(candidate.prohibitedCapabilities) || candidate.prohibitedCapabilities.length === 0) {
+      fail(`${candidate.id}: prohibitedCapabilities must be documented`);
+    }
+
+    const requiredFiles = [
+      candidate.source,
+      path.posix.join(relativeDir, 'Makefile'),
+      path.posix.join(relativeDir, 'README.md'),
+    ];
+    for (const file of requiredFiles) {
+      if (!fs.existsSync(path.join(root, file))) fail(`${candidate.id}: missing ${file}`);
+    }
+
+    const source = fs.existsSync(path.join(root, candidate.source))
+      ? fs.readFileSync(path.join(root, candidate.source), 'utf8')
+      : '';
+    for (const marker of ['KPM_NAME(', 'KPM_VERSION(', 'KPM_INIT(', 'KPM_EXIT(']) {
+      if (!source.includes(marker)) fail(`${candidate.id}: source missing ${marker}`);
+    }
+  }
+}
+
 if (!process.exitCode) {
-  console.log(`Catalog valid: ${catalog.modules.length} installable, ${drafts.drafts.length} drafts.`);
+  console.log(
+    `Catalog valid: ${catalog.modules.length} installable, ` +
+    `${drafts.drafts.length} drafts, ${candidateCount} build-only candidates.`,
+  );
 }
