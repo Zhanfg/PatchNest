@@ -10,6 +10,7 @@ on:
     branches:
       - main
       - restart/rebuild-catalog
+      - restart/verified-kpm-build
   workflow_dispatch:
 
 jobs:
@@ -24,7 +25,7 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Validate catalog and draft inventory
+      - name: Validate catalog drafts and build-only candidates
         run: node scripts/validate.js
 
       - name: Reject installable Linux-module sources
