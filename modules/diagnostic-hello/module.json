@@ -1,0 +1,28 @@
+{
+  "id": "patchnest-diagnostic-hello",
+  "name": "PatchNest Diagnostic Hello",
+  "version": "0.1.0",
+  "author": "PatchNest Maintainers",
+  "license": "GPL-2.0-or-later",
+  "description": "Non-invasive KPM used to validate build, load, control, unload, and provenance pipelines.",
+  "source": "modules/diagnostic-hello/diagnostic_hello.c",
+  "artifact": "patchnest-diagnostic-hello.kpm",
+  "upstreamSdk": {
+    "repository": "KernelSU-Next/KPatch-Next",
+    "commit": "0fe6d142266b80e5aa445a7ea1534f88a8f33a35"
+  },
+  "channel": "build-only",
+  "installable": false,
+  "capabilities": [
+    "kernel-log lifecycle messages",
+    "constant diagnostic control response"
+  ],
+  "prohibitedCapabilities": [
+    "hooking",
+    "hiding",
+    "policy modification",
+    "boot-state modification",
+    "persistence"
+  ],
+  "releaseGate": "Physical-device lifecycle validation required before catalog publication."
+}
