@@ -1,7 +1,7 @@
 {
   "upstreamRepository": "KernelSU-Next/KPatch-Next",
-  "upstreamCommit": "0fe6d142266b80e5a2e445a7a6a1534f88a8f33a35",
+  "upstreamCommit": "0fe6d142266b80e5aa445a7ea1534f88a8f33a35",
   "upstreamDirectory": "user",
   "version": "0.13.5-2",
-  "status": "source import in progress"
+  "importedBy": "GitHub Actions"
 }
