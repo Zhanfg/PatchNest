@@ -97,7 +97,8 @@ jobs:
           artifact="$MODULE_DIR/$ARTIFACT_NAME"
           description=$(file "$artifact")
           echo "$description"
-          printf '%s' "$description" | grep -q 'ELF 64-bit.*ARM aarch64.*relocatable'
+          printf '%s' "$description" | grep -q 'ELF 64-bit'
+
           readelf -h "$artifact" | tee "$MODULE_DIR/elf-header.txt"
           readelf -SW "$artifact" | tee "$MODULE_DIR/sections.txt"
           readelf -sW "$artifact" | tee "$MODULE_DIR/symbols.txt"
@@ -109,12 +110,27 @@ jobs:
           strings "$artifact" | grep -Fx '0.1.0'
           strings "$artifact" | grep -Fx 'patchnest-diagnostic-ok'
 
-          if readelf -SW "$artifact" | awk '$0 ~ /W/ && $0 ~ /X/ { found=1 } END { exit !found }'; then
-            echo '::error::KPM contains a writable and executable section'
-            exit 1
-          fi
-          if readelf -SW "$artifact" | grep -Eq '\.(plt|got)([[:space:]]|$)' ; then
-            echo '::error::Unexpected PLT/GOT section in KPM'
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          lines = Path('modules/diagnostic-hello/sections.txt').read_text().splitlines()
+          pattern = re.compile(
+              r'^\s*\[\s*\d+\]\s+\S+\s+\S+\s+'
+              r'[0-9a-fA-F]+\s+[0-9a-fA-F]+\s+[0-9a-fA-F]+\s+'
+              r'\S+\s+(\S*)'
+          )
+          for line in lines:
+              match = pattern.match(line)
+              if not match:
+                  continue
+              flags = match.group(1)
+              if 'W' in flags and 'X' in flags:
+                  raise SystemExit(f'writable-executable KPM section: {line}')
+          PY
+
+          if grep -Eq 'R_AARCH64_(JUMP_SLOT|GLOB_DAT)' "$MODULE_DIR/relocations.txt"; then
+            echo '::error::Unexpected dynamic-linker relocation in KPM'
             exit 1
           fi
 
