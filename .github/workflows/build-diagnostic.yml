@@ -12,6 +12,10 @@ on:
       - restart/verified-kpm-build
   workflow_dispatch:
 
+concurrency:
+  group: diagnostic-kpm-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   KP_REPOSITORY: KernelSU-Next/KPatch-Next
   KP_COMMIT: 0fe6d142266b80e5aa445a7ea1534f88a8f33a35
