@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 project("kpatch" LANGUAGES C)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -25,6 +25,17 @@ set(SRCS
 
 add_library(kp STATIC ${SRCS})
 add_executable(kpatch ${SRCS} src/main.c)
+
+foreach(target kp kpatch)
+    target_compile_options(${target} PRIVATE
+        -Wall
+        -Wextra
+        -Werror=format
+        -Werror=implicit-function-declaration
+        -Werror=incompatible-pointer-types
+        -Werror=return-type
+    )
+endforeach()
 
 target_link_options(kp PRIVATE
     "-Wl,--build-id=none"
