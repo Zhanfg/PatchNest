@@ -1,0 +1,10 @@
+build/
+out/
+reference/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+.ninja_*
+build.ninja
+compile_commands.json
+.DS_Store

@@ -1,0 +1,119 @@
+name: Build PatchNest CLI
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - main
+      - restart/restore-cli-source
+  workflow_dispatch:
+
+env:
+  UPSTREAM_REPOSITORY: KernelSU-Next/KPatch-Next
+  UPSTREAM_COMMIT: 0fe6d142266b80e5aa445a7ea1534f88a8f33a35
+  RELEASE_VERSION: 0.13.5-2
+  RELEASE_SHA256: d6a654816f11c8d297ca59aaace9c61537238f26191738c14610d2dcf39bf3b0
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+
+      - name: Setup Android NDK
+        id: ndk
+        uses: nttld/setup-ndk@ed92fe6cadad69be94a966a7ee3271275e62f779
+        with:
+          ndk-version: r26b
+
+      - name: Verify imported source snapshot
+        run: |
+          set -euo pipefail
+          manifest_repo=$(jq -r '.upstreamRepository' SOURCE_IMPORT_MANIFEST.json)
+          manifest_commit=$(jq -r '.upstreamCommit' SOURCE_IMPORT_MANIFEST.json)
+          manifest_version=$(jq -r '.version' SOURCE_IMPORT_MANIFEST.json)
+          test "$manifest_repo" = "$UPSTREAM_REPOSITORY"
+          test "$manifest_commit" = "$UPSTREAM_COMMIT"
+          test "$manifest_version" = "$RELEASE_VERSION"
+
+          rm -rf /tmp/kpatch-next
+          git clone --filter=blob:none --no-checkout \
+            "https://github.com/${UPSTREAM_REPOSITORY}.git" /tmp/kpatch-next
+          git -C /tmp/kpatch-next checkout --detach "$UPSTREAM_COMMIT"
+
+          for source in /tmp/kpatch-next/user/*.c /tmp/kpatch-next/user/*.h; do
+            name=$(basename "$source")
+            cmp "$source" "src/$name" || {
+              echo "::error file=src/$name::Source differs from pinned upstream snapshot"
+              exit 1
+            }
+          done
+
+          cmp /tmp/kpatch-next/banner banner
+          cmp /tmp/kpatch-next/kernel/patch/include/uapi/scdefs.h src/uapi/scdefs.h
+          cmp /tmp/kpatch-next/version version
+          cmp /tmp/kpatch-next/revision revision
+          cmp /tmp/kpatch-next/LICENSE LICENSE
+
+      - name: Configure Android build
+        run: |
+          set -euo pipefail
+          cmake -S . -B build/android \
+            -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="${{ steps.ndk.outputs.ndk-path }}/build/cmake/android.toolchain.cmake" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DANDROID_PLATFORM=android-33 \
+            -DANDROID_ABI=arm64-v8a
+
+      - name: Build Android CLI
+        run: cmake --build build/android --target kpatch --parallel
+
+      - name: Inspect binary
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          cp build/android/kpatch out/kpatch-android
+          test -s out/kpatch-android
+          description=$(file out/kpatch-android)
+          echo "$description"
+          printf '%s' "$description" | grep -q 'ELF 64-bit.*ARM aarch64'
+          readelf -h out/kpatch-android
+          sha256sum out/kpatch-android | tee out/kpatch-android.sha256
+
+      - name: Compare existing release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          actual=$(sha256sum out/kpatch-android | awk '{print $1}')
+          echo "Built SHA256:    $actual"
+          echo "Expected SHA256: $RELEASE_SHA256"
+          test "$actual" = "$RELEASE_SHA256" || {
+            echo "::error::Build is not byte-for-byte reproducible with release $RELEASE_VERSION"
+            exit 1
+          }
+
+          mkdir -p reference
+          gh release download "$RELEASE_VERSION" \
+            -R Zhanfg/PatchNest \
+            -p kpatch-android \
+            -D reference
+          reference_sha=$(sha256sum reference/kpatch-android | awk '{print $1}')
+          test "$reference_sha" = "$RELEASE_SHA256"
+          cmp out/kpatch-android reference/kpatch-android
+
+      - name: Upload CLI artifact
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: patchnest-cli-${{ github.sha }}
+          path: |
+            out/kpatch-android
+            out/kpatch-android.sha256
+          if-no-files-found: warn
+          retention-days: 14
