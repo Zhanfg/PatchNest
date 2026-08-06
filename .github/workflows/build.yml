@@ -9,13 +9,14 @@ on:
   push:
     branches:
       - main
-      - restart/restore-cli-source
+      - 'restart/**'
   workflow_dispatch:
 
 env:
   UPSTREAM_REPOSITORY: KernelSU-Next/KPatch-Next
   UPSTREAM_COMMIT: 0fe6d142266b80e5aa445a7ea1534f88a8f33a35
   RELEASE_VERSION: 0.13.5-2
+  RELEASE_TAG_COMMIT: d8152d4afdafa7f4f58e25223d2ca8e1e9b131cd
   RELEASE_SHA256: d6a654816f11c8d297ca59aaace9c61537238f26191738c14610d2dcf39bf3b0
 
 jobs:
@@ -24,6 +25,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          fetch-depth: 0
 
       - name: Setup Android NDK
         id: ndk
@@ -31,28 +34,49 @@ jobs:
         with:
           ndk-version: r26b
 
-      - name: Verify imported source snapshot
+      - name: Verify legacy tag and source manifest
         run: |
           set -euo pipefail
+
+          git fetch --tags --force
+          tag_commit=$(git rev-list -n 1 "$RELEASE_VERSION")
+          test "$tag_commit" = "$RELEASE_TAG_COMMIT" || {
+            echo "::error::Legacy tag moved: expected=$RELEASE_TAG_COMMIT actual=$tag_commit"
+            exit 1
+          }
+
           manifest_repo=$(jq -r '.upstreamRepository' SOURCE_IMPORT_MANIFEST.json)
           manifest_commit=$(jq -r '.upstreamCommit' SOURCE_IMPORT_MANIFEST.json)
+          manifest_directory=$(jq -r '.upstreamDirectory' SOURCE_IMPORT_MANIFEST.json)
           manifest_version=$(jq -r '.version' SOURCE_IMPORT_MANIFEST.json)
           test "$manifest_repo" = "$UPSTREAM_REPOSITORY"
           test "$manifest_commit" = "$UPSTREAM_COMMIT"
+          test "$manifest_directory" = user
           test "$manifest_version" = "$RELEASE_VERSION"
 
+      - name: Verify imported source snapshot in both directions
+        run: |
+          set -euo pipefail
           rm -rf /tmp/kpatch-next
           git clone --filter=blob:none --no-checkout \
             "https://github.com/${UPSTREAM_REPOSITORY}.git" /tmp/kpatch-next
           git -C /tmp/kpatch-next checkout --detach "$UPSTREAM_COMMIT"
+          test "$(git -C /tmp/kpatch-next rev-parse HEAD)" = "$UPSTREAM_COMMIT"
 
-          for source in /tmp/kpatch-next/user/*.c /tmp/kpatch-next/user/*.h; do
-            name=$(basename "$source")
-            cmp "$source" "src/$name" || {
+          find /tmp/kpatch-next/user -maxdepth 1 -type f \
+            \( -name '*.c' -o -name '*.h' \) \
+            -printf '%f\n' | sort > /tmp/upstream-source-list.txt
+          find src -maxdepth 1 -type f \
+            \( -name '*.c' -o -name '*.h' \) \
+            -printf '%f\n' | sort > /tmp/local-source-list.txt
+          diff -u /tmp/upstream-source-list.txt /tmp/local-source-list.txt
+
+          while IFS= read -r name; do
+            cmp "/tmp/kpatch-next/user/$name" "src/$name" || {
               echo "::error file=src/$name::Source differs from pinned upstream snapshot"
               exit 1
             }
-          done
+          done < /tmp/upstream-source-list.txt
 
           cmp /tmp/kpatch-next/banner banner
           cmp /tmp/kpatch-next/kernel/patch/include/uapi/scdefs.h src/uapi/scdefs.h
@@ -60,32 +84,55 @@ jobs:
           cmp /tmp/kpatch-next/revision revision
           cmp /tmp/kpatch-next/LICENSE LICENSE
 
-      - name: Configure Android build
+      - name: Configure first Android build
         run: |
           set -euo pipefail
-          cmake -S . -B build/android \
+          cmake -S . -B build/android-a \
             -G Ninja \
             -DCMAKE_TOOLCHAIN_FILE="${{ steps.ndk.outputs.ndk-path }}/build/cmake/android.toolchain.cmake" \
             -DCMAKE_BUILD_TYPE=Release \
             -DANDROID_PLATFORM=android-33 \
             -DANDROID_ABI=arm64-v8a
 
-      - name: Build Android CLI
-        run: cmake --build build/android --target kpatch --parallel
+      - name: Build first Android CLI
+        run: cmake --build build/android-a --target kpatch --parallel
 
-      - name: Inspect binary
+      - name: Configure second Android build
+        run: |
+          set -euo pipefail
+          cmake -S . -B build/android-b \
+            -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="${{ steps.ndk.outputs.ndk-path }}/build/cmake/android.toolchain.cmake" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DANDROID_PLATFORM=android-33 \
+            -DANDROID_ABI=arm64-v8a
+
+      - name: Build second Android CLI
+        run: cmake --build build/android-b --target kpatch --parallel
+
+      - name: Verify deterministic current build
         run: |
           set -euo pipefail
           mkdir -p out
-          cp build/android/kpatch out/kpatch-android
+          cp build/android-a/kpatch out/kpatch-android
+          cp build/android-b/kpatch out/kpatch-android-second
           test -s out/kpatch-android
+          cmp out/kpatch-android out/kpatch-android-second
+          sha256sum out/kpatch-android | tee out/kpatch-android.sha256
+
+      - name: Inspect Android ABI and dynamic contract
+        run: |
+          set -euo pipefail
+          llvm_root="${{ steps.ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin"
           description=$(file out/kpatch-android)
           echo "$description"
           printf '%s' "$description" | grep -q 'ELF 64-bit.*ARM aarch64'
-          readelf -h out/kpatch-android
-          sha256sum out/kpatch-android | tee out/kpatch-android.sha256
+          printf '%s' "$description" | grep -q 'pie executable'
+          printf '%s' "$description" | grep -q 'interpreter /system/bin/linker64'
+          "$llvm_root/llvm-readelf" -h -l -d out/kpatch-android | tee out/elf-report.txt
+          "$llvm_root/llvm-readelf" -l out/kpatch-android | grep -q '/system/bin/linker64'
 
-      - name: Compare existing release
+      - name: Compare immutable legacy release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -107,7 +154,47 @@ jobs:
           test "$reference_sha" = "$RELEASE_SHA256"
           cmp out/kpatch-android reference/kpatch-android
 
-      - name: Upload CLI artifact
+      - name: Write build provenance
+        run: |
+          set -euo pipefail
+          ndk_revision=$(awk -F= '/Pkg.Revision/{gsub(/[[:space:]]/, "", $2); print $2}' \
+            "${{ steps.ndk.outputs.ndk-path }}/source.properties")
+          binary_sha=$(sha256sum out/kpatch-android | awk '{print $1}')
+          jq -n \
+            --arg repository "$GITHUB_REPOSITORY" \
+            --arg sourceCommit "$GITHUB_SHA" \
+            --arg upstreamRepository "$UPSTREAM_REPOSITORY" \
+            --arg upstreamCommit "$UPSTREAM_COMMIT" \
+            --arg legacyTag "$RELEASE_VERSION" \
+            --arg legacyTagCommit "$RELEASE_TAG_COMMIT" \
+            --arg ndkRevision "$ndk_revision" \
+            --arg androidPlatform android-33 \
+            --arg androidAbi arm64-v8a \
+            --arg sha256 "$binary_sha" \
+            '{
+              repository: $repository,
+              sourceCommit: $sourceCommit,
+              upstreamRepository: $upstreamRepository,
+              upstreamCommit: $upstreamCommit,
+              legacyRelease: {
+                tag: $legacyTag,
+                tagCommit: $legacyTagCommit
+              },
+              toolchain: {
+                androidNdk: $ndkRevision,
+                platform: $androidPlatform,
+                abi: $androidAbi
+              },
+              artifact: {
+                name: "kpatch-android",
+                sha256: $sha256,
+                byteIdenticalAcrossTwoBuildDirectories: true,
+                byteIdenticalToLegacyRelease: true
+              }
+            }' > out/build-provenance.json
+          cat out/build-provenance.json
+
+      - name: Upload CLI verification artifact
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
@@ -115,5 +202,7 @@ jobs:
           path: |
             out/kpatch-android
             out/kpatch-android.sha256
+            out/elf-report.txt
+            out/build-provenance.json
           if-no-files-found: warn
           retention-days: 14
