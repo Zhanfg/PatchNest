@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34a6f41551a30e30af803
 
       - name: Setup Android NDK
         id: ndk
@@ -34,9 +34,14 @@ jobs:
       - name: Verify imported source snapshot
         run: |
           set -euo pipefail
+          manifest_repo=$(jq -r '.upstreamRepository' SOURCE_IMPORT_MANIFEST.json)
           manifest_commit=$(jq -r '.upstreamCommit' SOURCE_IMPORT_MANIFEST.json)
+          manifest_version=$(jq -r '.version' SOURCE_IMPORT_MANIFEST.json)
+          test "$manifest_repo" = "$UPSTREAM_REPOSITORY"
           test "$manifest_commit" = "$UPSTREAM_COMMIT"
+          test "$manifest_version" = "$RELEASE_VERSION"
 
+          rm -rf /tmp/kpatch-next
           git clone --filter=blob:none --no-checkout \
             "https://github.com/${UPSTREAM_REPOSITORY}.git" /tmp/kpatch-next
           git -C /tmp/kpatch-next checkout --detach "$UPSTREAM_COMMIT"
@@ -48,6 +53,12 @@ jobs:
               exit 1
             }
           done
+
+          cmp /tmp/kpatch-next/banner banner
+          cmp /tmp/kpatch-next/kernel/patch/include/uapi/scdefs.h src/uapi/scdefs.h
+          cmp /tmp/kpatch-next/version version
+          cmp /tmp/kpatch-next/revision revision
+          cmp /tmp/kpatch-next/LICENSE LICENSE
 
       - name: Configure Android build
         run: |
@@ -68,8 +79,9 @@ jobs:
           mkdir -p out
           cp build/android/kpatch out/kpatch-android
           test -s out/kpatch-android
-          file out/kpatch-android
-          file out/kpatch-android | grep -q 'ELF 64-bit.*ARM aarch64'
+          description=$(file out/kpatch-android)
+          echo "$description"
+          printf '%s' "$description" | grep -q 'ELF 64-bit.*ARM aarch64'
           readelf -h out/kpatch-android
           sha256sum out/kpatch-android | tee out/kpatch-android.sha256
 
@@ -97,7 +109,7 @@ jobs:
 
       - name: Upload CLI artifact
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: patchnest-cli-${{ github.sha }}
           path: |
