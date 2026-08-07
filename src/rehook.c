@@ -6,9 +6,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <error.h>
 #include <string.h>
-#include <errno.h>
+
+#include "cli_status.h"
 #include "supercall.h"
 
 extern const char program_name[];
@@ -48,24 +48,16 @@ static void rehook_status_usage(int status)
 long set_rehook_mode(int enable)
 {
     long rehook_status = sc_rehook_status();
-    
-    if (rehook_status < 0) {
-        printf("Error getting rehook syscall status: %ld\n", rehook_status);
-        return 1;
-    }
+    if (rehook_status < 0) return rehook_status;
 
     int current_enabled = (rehook_status == 1) ? 1 : 0;
-
     if (current_enabled == enable) {
         printf("Rehook syscall: already %s\n", enable ? "enabled" : "disabled");
         return 0;
     }
 
     long rc = sc_rehook_syscall(enable);
-    if (rc < 0) {
-        printf("Error %s rehook syscall: %ld\n", enable ? "enabling" : "disabling", rc);
-        return 1;
-    }
+    if (rc < 0) return rc;
 
     printf("Rehook syscall: %s\n", enable ? "enabled" : "disabled");
     return 0;
@@ -74,26 +66,17 @@ long set_rehook_mode(int enable)
 long get_rehook_status(void)
 {
     long rehook_status = sc_rehook_status();
-    
-    if (rehook_status < 0) {
-        printf("Error getting rehook syscall status: %ld\n", rehook_status);
-        return 1;
-    }
+    if (rehook_status < 0) return rehook_status;
 
     int enabled = (rehook_status == 1) ? 1 : 0;
-    
     printf("Rehook syscall status: %s\n", enabled ? "enabled" : "disabled");
-    
     return 0;
 }
 
 int kprehook_main(int argc, char **argv)
 {
-    if (argc != 1)
-        rehook_usage(EXIT_FAILURE);
-
-    if (!strcmp(argv[0], "help"))
-        rehook_usage(EXIT_SUCCESS);
+    if (argc != 1) rehook_usage(KPATCH_CLI_USAGE);
+    if (!strcmp(argv[0], "help")) rehook_usage(EXIT_SUCCESS);
 
     int enable;
     if (!strcmp(argv[0], "enable")) {
@@ -102,16 +85,18 @@ int kprehook_main(int argc, char **argv)
         enable = 0;
     } else {
         fprintf(stderr, "Invalid argument: %s\n", argv[0]);
-        rehook_usage(EXIT_FAILURE);
+        return KPATCH_CLI_USAGE;
     }
 
-    return set_rehook_mode(enable);
+    long rc = set_rehook_mode(enable);
+    return rc < 0 ? cli_report_rc("rehook", rc) : KPATCH_CLI_OK;
 }
 
 int kprehook_status_main(int argc, char **argv)
 {
-    if (argc > 0 && !strcmp(argv[0], "help"))
-        rehook_status_usage(EXIT_SUCCESS);
-    
-    return get_rehook_status();
+    if (argc > 0 && !strcmp(argv[0], "help")) rehook_status_usage(EXIT_SUCCESS);
+    if (argc != 0) rehook_status_usage(KPATCH_CLI_USAGE);
+
+    long rc = get_rehook_status();
+    return rc < 0 ? cli_report_rc("rehook_status", rc) : KPATCH_CLI_OK;
 }
