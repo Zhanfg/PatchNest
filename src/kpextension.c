@@ -61,6 +61,9 @@ static int parse_uid(const char *text, uid_t *uid)
     if (errno == ERANGE || !end || *end != '\0')
         return -ERANGE;
 
+    if (value == 0 && strcmp(text, "0") != 0)
+        return -EINVAL;
+
     uid_t converted = (uid_t)value;
     if ((unsigned long long)converted != value)
         return -ERANGE;
