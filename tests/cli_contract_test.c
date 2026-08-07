@@ -133,11 +133,13 @@ static void test_uid_parser_rejects_ambiguous_input(void)
     char *negative[] = { "-1" };
     char *suffix[] = { "123junk" };
     char *overflow[] = { "184467440737095516160" };
+    char *zero_alias[] = { "00" };
 
     assert(kpexclude_get_main(1, alpha) == CLI_EXIT_USAGE);
     assert(kpexclude_get_main(1, negative) == CLI_EXIT_USAGE);
     assert(kpexclude_get_main(1, suffix) == CLI_EXIT_USAGE);
     assert(kpexclude_get_main(1, overflow) == CLI_EXIT_USAGE);
+    assert(kpexclude_get_main(1, zero_alias) == CLI_EXIT_USAGE);
 }
 
 static void test_positive_mutation_return_is_success(void)
