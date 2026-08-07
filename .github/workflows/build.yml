@@ -211,8 +211,9 @@ jobs:
           printf '%s' "$description" | grep -q 'ELF 64-bit.*ARM aarch64'
           printf '%s' "$description" | grep -q 'pie executable'
           printf '%s' "$description" | grep -q 'interpreter /system/bin/linker64'
-          "$llvm_root/llvm-readelf" -h -l -d out/kpatch-android | tee out/elf-report.txt
-          "$llvm_root/llvm-readelf" -l out/kpatch-android | grep -q '/system/bin/linker64'
+          "$llvm_root/llvm-readelf" -h -l -d out/kpatch-android > out/elf-report.txt
+          cat out/elf-report.txt
+          grep -q '/system/bin/linker64' out/elf-report.txt
 
       - name: Build pristine pinned-upstream legacy baseline
         run: |
