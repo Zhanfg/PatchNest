@@ -127,12 +127,12 @@ static inline long sc_set_ap_mod_exclude(uid_t uid, int exclude)
     }
 }
 
-static inline int sc_get_ap_mod_exclude(uid_t uid)
+static inline long sc_get_ap_mod_exclude(uid_t uid)
 {
     int exclude = 0;
-    int rc = sc_kstorage_read(KSTORAGE_EXCLUDE_LIST_GROUP, uid, &exclude, 0, sizeof(exclude));
-    if (rc < 0) return 0;
-    return exclude;
+    long rc = sc_kstorage_read(KSTORAGE_EXCLUDE_LIST_GROUP, uid, &exclude, 0, sizeof(exclude));
+    if (rc < 0) return rc;
+    return exclude ? 1 : 0;
 }
 
 static inline int sc_rehook_syscall(int enable)
