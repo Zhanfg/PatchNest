@@ -6,6 +6,7 @@
 #include <stdio.h>
 
 #include "cli_status.h"
+#include "kpatch.h"
 #include "kpextension.h"
 #include "kpm.h"
 #include "uapi/scdefs.h"
@@ -15,6 +16,8 @@ const char *program_name = "patchnest-test";
 static int excluded_state;
 static int kstorage_read_errno;
 static int kpm_nums_errno;
+static int hello_errno;
+static long hello_result = SUPERCALL_HELLO_MAGIC;
 
 static long command_id(long packed)
 {
@@ -39,6 +42,15 @@ long __wrap_syscall(long number, ...)
     if (cmd == SUPERCALL_KERNELPATCH_VER) {
         va_end(ap);
         return 0xa05;
+    }
+
+    if (cmd == SUPERCALL_HELLO) {
+        va_end(ap);
+        if (hello_errno) {
+            errno = hello_errno;
+            return -1;
+        }
+        return hello_result;
     }
 
     if (cmd == SUPERCALL_KPM_NUMS) {
@@ -97,6 +109,24 @@ static void test_exit_mapping_is_stable(void)
     assert(cli_exit_from_rc(-EIO) == CLI_EXIT_IO);
     assert(cli_exit_from_rc(-ENOMEM) == CLI_EXIT_IO);
     assert(cli_exit_from_rc(-EINVAL) == CLI_EXIT_KERNEL);
+}
+
+static void test_hello_is_a_real_readiness_gate(void)
+{
+    hello_errno = 0;
+    hello_result = SUPERCALL_HELLO_MAGIC;
+    assert(hello() == CLI_EXIT_OK);
+
+    /* A foreign KernelPatch-Public 0x1158 handshake must not report ready. */
+    hello_result = 0x11581158L;
+    assert(hello() == CLI_EXIT_UNSUPPORTED);
+
+    /* Bionic-style syscall failures preserve their stable error category. */
+    hello_errno = EPERM;
+    assert(hello() == CLI_EXIT_PERMISSION);
+
+    hello_errno = 0;
+    hello_result = SUPERCALL_HELLO_MAGIC;
 }
 
 static void test_exclude_query_exit_is_not_business_value(void)
@@ -173,6 +203,7 @@ static void test_kpm_num_preserves_bionic_errno(void)
 int main(void)
 {
     test_exit_mapping_is_stable();
+    test_hello_is_a_real_readiness_gate();
     test_exclude_query_exit_is_not_business_value();
     test_exclude_query_preserves_bionic_errno();
     test_uid_parser_rejects_ambiguous_input();
