@@ -17,7 +17,7 @@ extern "C"
 
     uint32_t version();
 
-    void hello();
+    int hello();
     void kpv();
     void kv();
 
