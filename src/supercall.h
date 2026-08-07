@@ -45,16 +45,14 @@ static inline long sc_klog(const char *msg)
     return syscall(__NR_supercall, NULL, compact_cmd(SUPERCALL_KLOG), msg);
 }
 
-static inline uint32_t sc_kp_ver(void)
+static inline long sc_kp_ver(void)
 {
-    long ret = syscall(__NR_supercall, NULL, compact_cmd(SUPERCALL_KERNELPATCH_VER));
-    return (uint32_t)ret;
+    return syscall(__NR_supercall, NULL, compact_cmd(SUPERCALL_KERNELPATCH_VER));
 }
 
-static inline uint32_t sc_k_ver(void)
+static inline long sc_k_ver(void)
 {
-    long ret = syscall(__NR_supercall, NULL, compact_cmd(SUPERCALL_KERNEL_VER));
-    return (uint32_t)ret;
+    return syscall(__NR_supercall, NULL, compact_cmd(SUPERCALL_KERNEL_VER));
 }
 
 static inline long sc_kpm_load(const char *path, const char *args, void *reserved)
