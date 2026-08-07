@@ -15,14 +15,14 @@ extern "C"
 {
 #endif
 
-    uint32_t version();
+    uint32_t version(void);
 
-    void hello();
-    void kpv();
-    void kv();
+    long hello(void);
+    long kpv(void);
+    long kv(void);
 
-    void bootlog();
-    void panic();
+    long bootlog(void);
+    long panic(void);
 
 #ifdef __cplusplus
 }
