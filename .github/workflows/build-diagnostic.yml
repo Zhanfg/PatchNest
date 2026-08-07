@@ -169,8 +169,8 @@ jobs:
 
           readelf -h "$artifact" | grep -Eq 'Type:[[:space:]]+REL'
           readelf -h "$artifact" | grep -Eq 'Machine:[[:space:]]+AArch64'
-          strings "$artifact" | grep -Fx 'patchnest-diagnostic-hello'
-          strings "$artifact" | grep -Fx '0.1.0'
+          strings "$artifact" | grep -Fx 'name=patchnest-diagnostic-hello'
+          strings "$artifact" | grep -Fx 'version=0.1.0'
           strings "$artifact" | grep -Fx 'patchnest-diagnostic-ok'
 
           python3 - <<'PY'
