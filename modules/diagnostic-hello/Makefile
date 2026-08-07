@@ -1,9 +1,15 @@
+NEEDS_TOOLCHAIN_GOALS := $(filter-out clean print-build-graph,$(MAKECMDGOALS))
+ifeq ($(strip $(MAKECMDGOALS)),)
+    NEEDS_TOOLCHAIN_GOALS := all
+endif
+
+ifneq ($(strip $(NEEDS_TOOLCHAIN_GOALS)),)
 ifndef TARGET_COMPILE
     $(error TARGET_COMPILE not set)
 endif
-
 ifndef KP_DIR
     $(error KP_DIR not set)
+endif
 endif
 
 CC := $(TARGET_COMPILE)gcc
