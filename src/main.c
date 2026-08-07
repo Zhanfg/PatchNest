@@ -39,7 +39,7 @@ static void usage(int status)
         fprintf(stdout,
                 "\n"
                 "Commands:\n"
-                "hello              If KPatch-Next installed, '%s' will be echoed.\n"
+                "hello              Verify the KPatch-Next userspace/kernel ABI handshake.\n"
                 "kpver              Print KPatch-Next version.\n"
                 "kver               Print Kernel version.\n"
                 "kpm                KPatch-Next Module manager.\n"
@@ -47,8 +47,7 @@ static void usage(int status)
                 "exclude_get        Get exclude list status.\n"
                 "rehook             Set rehook mode (0=off, 1=target, 2=minimal).\n"
                 "rehook_status      Check current rehook mode.\n"
-                "\n",
-                SUPERCALL_HELLO_ECHO);
+                "\n");
     }
     exit(status);
 }
@@ -100,8 +99,7 @@ int main(int argc, char **argv)
 
     switch (cmd) {
     case SUPERCALL_HELLO:
-        hello();
-        return CLI_EXIT_OK;
+        return hello();
     case SUPERCALL_KERNELPATCH_VER:
         kpv();
         return CLI_EXIT_OK;
