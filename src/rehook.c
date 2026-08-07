@@ -45,7 +45,7 @@ _Noreturn static void rehook_status_usage(int status)
     exit(status);
 }
 
-static int set_rehook_mode(int enable)
+long set_rehook_mode(int enable)
 {
     long rehook_status = sc_rehook_status();
     if (rehook_status < 0)
@@ -74,7 +74,7 @@ static int set_rehook_mode(int enable)
     return CLI_EXIT_OK;
 }
 
-static int get_rehook_status(void)
+long get_rehook_status(void)
 {
     long rehook_status = sc_rehook_status();
     if (rehook_status < 0)
@@ -93,9 +93,9 @@ int kprehook_main(int argc, char **argv)
         rehook_usage(EXIT_SUCCESS);
 
     if (!strcmp(argv[0], "enable"))
-        return set_rehook_mode(1);
+        return (int)set_rehook_mode(1);
     if (!strcmp(argv[0], "disable"))
-        return set_rehook_mode(0);
+        return (int)set_rehook_mode(0);
 
     fprintf(stderr, "Invalid argument: %s\n", argv[0]);
     rehook_usage(CLI_EXIT_USAGE);
@@ -108,5 +108,5 @@ int kprehook_status_main(int argc, char **argv)
     if (argc != 0)
         rehook_status_usage(CLI_EXIT_USAGE);
 
-    return get_rehook_status();
+    return (int)get_rehook_status();
 }
