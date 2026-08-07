@@ -42,10 +42,12 @@ function createManifest(env = process.env) {
     throw new Error('non-pull_request provenance must set TESTED_MERGE_COMMIT to null/empty');
   }
 
+  const artifactSha256 = digest(artifactPath);
+
   return {
     schemaVersion: 2,
     artifact: artifactName,
-    sha256: digest(artifactPath),
+    sha256: artifactSha256,
     size: fs.statSync(artifactPath).size,
     eventName,
     repository: required(env, 'GITHUB_REPOSITORY'),
@@ -64,6 +66,11 @@ function createManifest(env = process.env) {
     sdkCommit: required(env, 'KP_COMMIT'),
     toolchain: 'arm-gnu-toolchain-12.2.rel1-x86_64-aarch64-none-elf',
     toolchainSha256: required(env, 'ARM_TOOLCHAIN_SHA256'),
+    physicalValidationBinding: {
+      artifactSha256,
+      sourceHeadCommit,
+      testedMergeCommit,
+    },
     installable: false,
     deviceValidated: false,
   };
