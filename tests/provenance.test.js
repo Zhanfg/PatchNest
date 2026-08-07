@@ -47,6 +47,11 @@ try {
   assert.equal(pullRequest.baseCommit, '2'.repeat(40));
   assert.equal(pullRequest.testedCheckoutCommit, '3'.repeat(40));
   assert.equal(pullRequest.testedMergeCommit, '3'.repeat(40));
+  assert.deepEqual(pullRequest.physicalValidationBinding, {
+    artifactSha256: pullRequest.sha256,
+    sourceHeadCommit: '1'.repeat(40),
+    testedMergeCommit: '3'.repeat(40),
+  });
 
   const push = createManifest({
     ...common,
@@ -60,6 +65,11 @@ try {
   assert.equal(push.baseCommit, null);
   assert.equal(push.testedCheckoutCommit, '4'.repeat(40));
   assert.equal(push.testedMergeCommit, null);
+  assert.deepEqual(push.physicalValidationBinding, {
+    artifactSha256: push.sha256,
+    sourceHeadCommit: '4'.repeat(40),
+    testedMergeCommit: null,
+  });
 
   assert.throws(() => createManifest({
     ...common,
