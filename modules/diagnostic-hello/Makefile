@@ -36,7 +36,7 @@ $(TARGET): $(OBJECTS) $(LINKER_SCRIPT)
 	@cmp "$(LINKER_SCRIPT)" "$(UPSTREAM_LINKER_SCRIPT)" || { echo "local linker script diverged from pinned upstream contract" >&2; exit 1; }
 	$(CC) $(LDFLAGS) -o $@ $(OBJECTS)
 	@for section in $(LINKER_SENTINELS); do \
-		$(READELF) -SW $@ | awk -v section="$$section" 'BEGIN { found=0 } $$3 == section { found=1; if ($$7 !~ /^0*1$$/) exit 2 } END { if (!found) exit 1 }' || { \
+		$(READELF) -SW $@ | awk -v section="$$section" 'BEGIN { found=0 } { for (i=1; i<=NF; i++) if ($$i == section) { found=1; size=$$(i + 4); if (size !~ /^0*1$$/) exit 2 } } END { if (!found) exit 1 }' || { \
 			echo "linker sentinel contract failed for $$section" >&2; \
 			exit 1; \
 		}; \
