@@ -11,7 +11,7 @@
 #include <errno.h>
 #include "supercall.h"
 
-extern const char program_name[];
+extern const char *program_name;
 
 static void rehook_usage(int status)
 {
