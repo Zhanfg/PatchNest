@@ -9,7 +9,11 @@
   "artifact": "patchnest-diagnostic-hello.kpm",
   "upstreamSdk": {
     "repository": "KernelSU-Next/KPatch-Next",
-    "commit": "0fe6d142266b80e5aa445a7ea1534f88a8f33a35"
+    "commit": "0fe6d142266b80e5aa445a7ea1534f88a8f33a35",
+    "linkerScript": {
+      "path": "kpms/demo-hello/hello.lds",
+      "gitBlobSha": "d599a67aabae7920d30845019e74b01a58d684b4"
+    }
   },
   "build": {
     "sources": [
@@ -17,6 +21,11 @@
     ],
     "localHeaders": [],
     "linkerScript": "modules/diagnostic-hello/diagnostic_hello.lds",
+    "linkerSentinelSections": [
+      ".plt",
+      ".init.plt",
+      ".text.ftrace_trampoline"
+    ],
     "declaredInputs": [
       "modules/diagnostic-hello/Makefile",
       "modules/diagnostic-hello/README.md",
