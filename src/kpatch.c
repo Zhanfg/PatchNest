@@ -5,52 +5,50 @@
 
 #include "kpatch.h"
 
-#include <getopt.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <linux/capability.h>
 #include <errno.h>
-#include <ctype.h>
-#include <stdarg.h>
-#include <error.h>
+#include <stdio.h>
 
 #include "supercall.h"
 
-uint32_t version()
+uint32_t version(void)
 {
-    uint32_t version_code = (MAJOR << 16) + (MINOR << 8) + PATCH;
-    return version_code;
+    return (MAJOR << 16) + (MINOR << 8) + PATCH;
 }
 
-void hello()
+long hello(void)
 {
     long ret = sc_hello();
-    if (ret == SUPERCALL_HELLO_MAGIC) {
-        fprintf(stdout, "%s\n", SUPERCALL_HELLO_ECHO);
-    }
+    if (ret < 0) return ret;
+    if (ret != SUPERCALL_HELLO_MAGIC) return -EPROTO;
+
+    fprintf(stdout, "%s\n", SUPERCALL_HELLO_ECHO);
+    return 0;
 }
 
-void kpv()
+long kpv(void)
 {
-    uint32_t kpv = sc_kp_ver();
-    fprintf(stdout, "%x\n", kpv);
+    long ret = sc_kp_ver();
+    if (ret < 0) return ret;
+
+    fprintf(stdout, "%lx\n", ret);
+    return 0;
 }
 
-void kv()
+long kv(void)
 {
-    uint32_t kv = sc_k_ver();
-    fprintf(stdout, "%x\n", kv);
+    long ret = sc_k_ver();
+    if (ret < 0) return ret;
+
+    fprintf(stdout, "%lx\n", ret);
+    return 0;
 }
 
-void bootlog()
+long bootlog(void)
 {
-    sc_bootlog();
+    return sc_bootlog();
 }
 
-void panic()
+long panic(void)
 {
-    sc_panic();
+    return sc_panic();
 }
