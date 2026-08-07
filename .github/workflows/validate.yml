@@ -28,6 +28,12 @@ jobs:
       - name: Validate catalog drafts and complete candidate build graphs
         run: node scripts/validate.js
 
+      - name: Run build-policy bypass fixtures
+        run: node tests/validate-build-policy.js
+
+      - name: Validate provenance identity schema
+        run: node tests/provenance.test.js
+
       - name: Reject installable Linux-module sources
         run: |
           set -euo pipefail
