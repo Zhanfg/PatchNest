@@ -10,6 +10,7 @@
 #include <sys/syscall.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 #include <errno.h>
 
