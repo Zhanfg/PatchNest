@@ -8,57 +8,54 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <error.h>
+#include <string.h>
 
+#include "cli_status.h"
 #include "kpm.h"
 #include "supercall.h"
 
 int kpm_load(const char *path, const char *args)
 {
-    int rc = sc_kpm_load(path, args, 0);
-    return rc;
+    return (int)sc_kpm_load(path, args, 0);
 }
 
 int kpm_control(const char *name, const char *ctl_args)
 {
     char buf[4096] = { '\0' };
-    int rc = sc_kpm_control(name, ctl_args, buf, sizeof(buf));
-    fprintf(stdout, "%s", buf);
+    int rc = (int)sc_kpm_control(name, ctl_args, buf, sizeof(buf));
+    if (rc >= 0 && buf[0]) fprintf(stdout, "%s", buf);
     return rc;
 }
 
 int kpm_unload(const char *name)
 {
-    int rc = sc_kpm_unload(name, 0);
-    return rc;
+    return (int)sc_kpm_unload(name, 0);
 }
 
-int kpm_nums()
+int kpm_nums(void)
 {
-    int nums = sc_kpm_nums();
-    fprintf(stdout, "%d\n", nums);
+    long nums = sc_kpm_nums();
+    if (nums < 0) return (int)nums;
+    fprintf(stdout, "%ld\n", nums);
     return 0;
 }
 
-int kpm_list()
+int kpm_list(void)
 {
     char buf[4096] = {0};
-    int rc = sc_kpm_list(buf, sizeof(buf));
-    if (rc > 0) {
-        fprintf(stdout, "%s", buf);
-        return 0;
-    }
-    return rc;
+    int rc = (int)sc_kpm_list(buf, sizeof(buf));
+    if (rc < 0) return rc;
+    if (rc > 0) fprintf(stdout, "%s", buf);
+    return 0;
 }
 
 int kpm_info(const char *name)
 {
-    char buf[4096];
-    int rc = sc_kpm_info(name, buf, sizeof(buf));
-    if (rc > 0) {
-        fprintf(stdout, "%s", buf);
-        return 0;
-    }
-    return rc;
+    char buf[4096] = {0};
+    int rc = (int)sc_kpm_info(name, buf, sizeof(buf));
+    if (rc < 0) return rc;
+    if (rc > 0) fprintf(stdout, "%s", buf);
+    return 0;
 }
 
 extern const char program_name[];
@@ -66,15 +63,15 @@ extern const char program_name[];
 static void usage(int status)
 {
     if (status != EXIT_SUCCESS)
-        fprintf(stderr, "Try `%s help' for more information.\n", program_name);
+        fprintf(stderr, "Try `%s kpm help' for more information.\n", program_name);
     else {
-        printf("Usage: %s <COMMAND> [ARG]...\n\n", program_name);
+        printf("Usage: %s kpm <COMMAND> [ARG]...\n\n", program_name);
         fprintf(stdout, ""
                         "KPatch-Next Module command set.\n"
                         "\n"
                         "help                           Print this help message. \n"
                         "load <KPM_PATH> [KPM_ARGS]     Load KPatch-Next Module with KPM_PATH and KPM_ARGS.\n"
-                        "ctl0 <KPM_NAME> <CTL_ARGS>     Control KPatch-Next Module named KPM_PATH with CTL_ARGS.\n"
+                        "ctl0 <KPM_NAME> <CTL_ARGS>     Control KPatch-Next Module named KPM_NAME with CTL_ARGS.\n"
                         "unload <KPM_NAME>              Unload KPatch-Next Module named KPM_NAME.\n"
                         "num                            Get the number of modules that have been loaded.\n"
                         "list                           List names of all loaded modules.\n"
@@ -84,9 +81,14 @@ static void usage(int status)
     exit(status);
 }
 
+static int cli_result(const char *operation, int rc)
+{
+    return rc < 0 ? cli_report_rc(operation, rc) : KPATCH_CLI_OK;
+}
+
 int kpm_main(int argc, char **argv)
 {
-    if (argc < 2) usage(EXIT_FAILURE);
+    if (argc < 2) usage(KPATCH_CLI_USAGE);
 
     const char *scmd = argv[1];
     int cmd = -1;
@@ -105,13 +107,13 @@ int kpm_main(int argc, char **argv)
         { "help", 0 },
     };
 
-    for (int i = 0; i < sizeof(cmd_arr) / sizeof(cmd_arr[0]); i++) {
+    for (size_t i = 0; i < sizeof(cmd_arr) / sizeof(cmd_arr[0]); i++) {
         if (strcmp(scmd, cmd_arr[i].scmd)) continue;
         cmd = cmd_arr[i].cmd;
         break;
     }
 
-    if (cmd < 0) usage(EXIT_FAILURE);
+    if (cmd < 0) usage(KPATCH_CLI_USAGE);
 
     const char *path = NULL;
     const char *mod_args = NULL;
@@ -120,33 +122,48 @@ int kpm_main(int argc, char **argv)
 
     switch (cmd) {
     case SUPERCALL_KPM_LOAD:
-        if (argc < 3) error(-EINVAL, 0, "module path does not exist");
+        if (argc < 3) {
+            fprintf(stderr, "module path does not exist\n");
+            return KPATCH_CLI_USAGE;
+        }
         path = argv[2];
         mod_args = argc < 4 ? NULL : argv[3];
-        return kpm_load(path, mod_args);
+        return cli_result("kpm load", kpm_load(path, mod_args));
     case SUPERCALL_KPM_CONTROL:
-        if (argc < 3) error(-EINVAL, 0, "module name does not exist");
-        if (argc < 4) error(-EINVAL, 0, "control argument does not exist");
+        if (argc < 3) {
+            fprintf(stderr, "module name does not exist\n");
+            return KPATCH_CLI_USAGE;
+        }
+        if (argc < 4) {
+            fprintf(stderr, "control argument does not exist\n");
+            return KPATCH_CLI_USAGE;
+        }
         name = argv[2];
         ctl_args = argv[3];
-        return kpm_control(name, ctl_args);
+        return cli_result("kpm ctl0", kpm_control(name, ctl_args));
     case SUPERCALL_KPM_UNLOAD:
-        if (argc < 3) error(-EINVAL, 0, "module name does not exist");
+        if (argc < 3) {
+            fprintf(stderr, "module name does not exist\n");
+            return KPATCH_CLI_USAGE;
+        }
         name = argv[2];
-        return kpm_unload(name);
+        return cli_result("kpm unload", kpm_unload(name));
     case SUPERCALL_KPM_NUMS:
-        return kpm_nums();
+        return cli_result("kpm num", kpm_nums());
     case SUPERCALL_KPM_LIST:
-        return kpm_list();
+        return cli_result("kpm list", kpm_list());
     case SUPERCALL_KPM_INFO:
-        if (argc < 3) error(-EINVAL, 0, "module name does not exist");
+        if (argc < 3) {
+            fprintf(stderr, "module name does not exist\n");
+            return KPATCH_CLI_USAGE;
+        }
         name = argv[2];
-        return kpm_info(name);
+        return cli_result("kpm info", kpm_info(name));
     case 0:
         usage(EXIT_SUCCESS);
     default:
-        usage(EXIT_FAILURE);
+        usage(KPATCH_CLI_USAGE);
     }
 
-    return 0;
+    return KPATCH_CLI_OK;
 }
