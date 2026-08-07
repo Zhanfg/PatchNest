@@ -10,11 +10,13 @@ trap 'rm -rf "$work"' EXIT HUP INT TERM
 san_flags='-fsanitize=address,undefined -fno-omit-frame-pointer -g'
 common_flags='-std=c11 -D_GNU_SOURCE -Wall -Wextra -Werror'
 
-# Exercise the syscall/CLI contract under ASan + UBSan.
+# Exercise the syscall/CLI contract under ASan + UBSan, including hello ABI
+# mismatch/error handling used by PatchNest-Module as its readiness gate.
 # shellcheck disable=SC2086
 $cc $common_flags $san_flags \
   -I"$repo_root/src" \
   "$repo_root/tests/cli_contract_test.c" \
+  "$repo_root/src/kpatch.c" \
   "$repo_root/src/kpm.c" \
   "$repo_root/src/kpextension.c" \
   -Wl,--wrap=syscall \
