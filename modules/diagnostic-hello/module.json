@@ -11,6 +11,31 @@
     "repository": "KernelSU-Next/KPatch-Next",
     "commit": "0fe6d142266b80e5aa445a7ea1534f88a8f33a35"
   },
+  "build": {
+    "sources": [
+      "modules/diagnostic-hello/diagnostic_hello.c"
+    ],
+    "localHeaders": [],
+    "linkerScript": "modules/diagnostic-hello/diagnostic_hello.lds",
+    "declaredInputs": [
+      "modules/diagnostic-hello/Makefile",
+      "modules/diagnostic-hello/README.md",
+      "modules/diagnostic-hello/diagnostic_hello.c",
+      "modules/diagnostic-hello/diagnostic_hello.lds",
+      "modules/diagnostic-hello/module.json"
+    ],
+    "generatedOutputs": [
+      "modules/diagnostic-hello/diagnostic_hello.d",
+      "modules/diagnostic-hello/diagnostic_hello.o",
+      "modules/diagnostic-hello/patchnest-diagnostic-hello.kpm",
+      "modules/diagnostic-hello/patchnest-diagnostic-hello.map"
+    ],
+    "allowedUndefinedSymbols": [
+      "compat_copy_to_user",
+      "kpver",
+      "printk"
+    ]
+  },
   "channel": "build-only",
   "installable": false,
   "capabilities": [
