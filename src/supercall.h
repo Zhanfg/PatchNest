@@ -120,19 +120,21 @@ static inline long sc_kstorage_remove(int gid, long did)
 
 static inline long sc_set_ap_mod_exclude(uid_t uid, int exclude)
 {
-    if(exclude) {
+    if (exclude) {
         return sc_kstorage_write(KSTORAGE_EXCLUDE_LIST_GROUP, uid, &exclude, 0, sizeof(exclude));
-    } else {
-        return sc_kstorage_remove(KSTORAGE_EXCLUDE_LIST_GROUP, uid);
     }
+    return sc_kstorage_remove(KSTORAGE_EXCLUDE_LIST_GROUP, uid);
 }
 
-static inline int sc_get_ap_mod_exclude(uid_t uid)
+/* Absence of a record means "not excluded". Every other kernel error is
+ * preserved so callers can distinguish a real false value from a failed query. */
+static inline long sc_get_ap_mod_exclude(uid_t uid)
 {
     int exclude = 0;
-    int rc = sc_kstorage_read(KSTORAGE_EXCLUDE_LIST_GROUP, uid, &exclude, 0, sizeof(exclude));
-    if (rc < 0) return 0;
-    return exclude;
+    long rc = sc_kstorage_read(KSTORAGE_EXCLUDE_LIST_GROUP, uid, &exclude, 0, sizeof(exclude));
+    if (rc == -ENOENT) return 0;
+    if (rc < 0) return rc;
+    return exclude ? 1 : 0;
 }
 
 static inline int sc_rehook_syscall(int enable)
