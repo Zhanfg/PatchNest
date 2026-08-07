@@ -9,6 +9,16 @@ const { execFileSync } = require('node:child_process');
 
 const repoRoot = path.resolve(__dirname, '..');
 const validator = ['scripts/validate.js'];
+const legacyProhibited = [
+  /hook_wrap/i,
+  /fp_hook/i,
+  /syscall_hook/i,
+  /kallsyms_lookup/i,
+  /selinux/i,
+  /proc_maps/i,
+  /boot_state/i,
+  /module_hide/i,
+];
 
 function copyRepo() {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patchnest-kpm-policy-'));
@@ -27,20 +37,48 @@ function run(root) {
   });
 }
 
+function legacySingleSourceKeywordCheckPasses(root) {
+  const metadata = JSON.parse(
+    fs.readFileSync(path.join(root, 'modules/diagnostic-hello/module.json'), 'utf8'),
+  );
+  const source = fs.readFileSync(path.join(root, metadata.source), 'utf8');
+  return legacyProhibited.every((pattern) => !pattern.test(source));
+}
+
+function assertRejected(root, name, expectedText) {
+  let rejected = false;
+  try {
+    run(root);
+  } catch (error) {
+    rejected = true;
+    const output = `${error.stdout || ''}\n${error.stderr || ''}`;
+    if (expectedText) assert.match(output, expectedText, `${name}: wrong rejection reason`);
+  }
+  assert.equal(rejected, true, `${name}: bypass fixture unexpectedly passed`);
+}
+
 function expectRejected(name, mutate, expectedText) {
   const root = copyRepo();
   try {
     mutate(root);
-    let rejected = false;
-    try {
-      run(root);
-    } catch (error) {
-      rejected = true;
-      const output = `${error.stdout || ''}\n${error.stderr || ''}`;
-      if (expectedText) assert.match(output, expectedText, `${name}: wrong rejection reason`);
-    }
-    assert.equal(rejected, true, `${name}: bypass fixture unexpectedly passed`);
+    assertRejected(root, name, expectedText);
     process.stdout.write(`PASS reject: ${name}\n`);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+}
+
+function expectLegacyPassNewReject(name, mutate, expectedText) {
+  const root = copyRepo();
+  try {
+    mutate(root);
+    assert.equal(
+      legacySingleSourceKeywordCheckPasses(root),
+      true,
+      `${name}: fixture must demonstrate that the old single-source keyword check passes`,
+    );
+    assertRejected(root, name, expectedText);
+    process.stdout.write(`PASS old-check-bypass/new-check-reject: ${name}\n`);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -54,11 +92,11 @@ try {
   fs.rmSync(baseline, { recursive: true, force: true });
 }
 
-expectRejected(
-  'undeclared second source object',
+expectLegacyPassNewReject(
+  'undeclared second source object hides prohibited symbol from legacy scan',
   (root) => {
     const dir = path.join(root, 'modules/diagnostic-hello');
-    fs.writeFileSync(path.join(dir, 'extra.c'), 'int hidden_extra(void) { return 0; }\n');
+    fs.writeFileSync(path.join(dir, 'extra.c'), 'int hook_wrap(void) { return 0; }\n');
     const makefile = path.join(dir, 'Makefile');
     fs.writeFileSync(
       makefile,
@@ -68,7 +106,7 @@ expectRejected(
       ),
     );
   },
-  /undeclared checked-in candidate file|SOURCES differs/,
+  /undeclared checked-in candidate file|SOURCES differs|prohibited source-scope marker/,
 );
 
 expectRejected(
