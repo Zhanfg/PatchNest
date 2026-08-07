@@ -13,17 +13,22 @@
 const char *program_name = "patchnest-test";
 
 static int excluded_state;
-static long kstorage_read_error;
-static long kpm_nums_error;
+static int kstorage_read_errno;
+static int kpm_nums_errno;
 
 static long command_id(long packed)
 {
     return packed & 0xffffL;
 }
 
+/*
+ * Model libc/Bionic syscall(2), not a raw kernel entry point: kernel -errno is
+ * exposed to C as return -1 with errno set to the original error number.
+ */
 long __wrap_syscall(long number, ...)
 {
     (void)number;
+    errno = 0;
 
     va_list ap;
     va_start(ap, number);
@@ -38,7 +43,11 @@ long __wrap_syscall(long number, ...)
 
     if (cmd == SUPERCALL_KPM_NUMS) {
         va_end(ap);
-        return kpm_nums_error ? kpm_nums_error : 7;
+        if (kpm_nums_errno) {
+            errno = kpm_nums_errno;
+            return -1;
+        }
+        return 7;
     }
 
     if (cmd == SUPERCALL_KSTORAGE_READ) {
@@ -47,8 +56,10 @@ long __wrap_syscall(long number, ...)
         int *out = va_arg(ap, int *);
         (void)va_arg(ap, long);
         va_end(ap);
-        if (kstorage_read_error)
-            return kstorage_read_error;
+        if (kstorage_read_errno) {
+            errno = kstorage_read_errno;
+            return -1;
+        }
         *out = excluded_state;
         return (long)sizeof(*out);
     }
@@ -70,7 +81,8 @@ long __wrap_syscall(long number, ...)
     }
 
     va_end(ap);
-    return -ENOSYS;
+    errno = ENOSYS;
+    return -1;
 }
 
 static void test_exit_mapping_is_stable(void)
@@ -92,27 +104,27 @@ static void test_exclude_query_exit_is_not_business_value(void)
     char *argv[] = { "1000" };
 
     excluded_state = 1;
-    kstorage_read_error = 0;
+    kstorage_read_errno = 0;
     assert(kpexclude_get_main(1, argv) == CLI_EXIT_OK);
 
     excluded_state = 0;
     assert(kpexclude_get_main(1, argv) == CLI_EXIT_OK);
 }
 
-static void test_exclude_query_propagates_kernel_failures(void)
+static void test_exclude_query_preserves_bionic_errno(void)
 {
     char *argv[] = { "1000" };
 
-    kstorage_read_error = -EPERM;
+    kstorage_read_errno = EPERM;
     assert(kpexclude_get_main(1, argv) == CLI_EXIT_PERMISSION);
 
-    kstorage_read_error = -ENOSYS;
+    kstorage_read_errno = ENOSYS;
     assert(kpexclude_get_main(1, argv) == CLI_EXIT_UNSUPPORTED);
 
-    kstorage_read_error = -EFAULT;
+    kstorage_read_errno = EFAULT;
     assert(kpexclude_get_main(1, argv) == CLI_EXIT_IO);
 
-    kstorage_read_error = 0;
+    kstorage_read_errno = 0;
 }
 
 static void test_uid_parser_rejects_ambiguous_input(void)
@@ -140,19 +152,19 @@ static void test_mutation_aborts_when_pre_read_fails(void)
 {
     char *argv[] = { "1000", "1" };
     excluded_state = 0;
-    kstorage_read_error = -EFAULT;
+    kstorage_read_errno = EFAULT;
     assert(kpexclude_set_main(2, argv) == CLI_EXIT_IO);
     assert(excluded_state == 0);
-    kstorage_read_error = 0;
+    kstorage_read_errno = 0;
 }
 
-static void test_kpm_num_preserves_failure(void)
+static void test_kpm_num_preserves_bionic_errno(void)
 {
-    kpm_nums_error = -EPERM;
+    kpm_nums_errno = EPERM;
     assert(kpm_nums() == CLI_EXIT_PERMISSION);
-    kpm_nums_error = -ENOSYS;
+    kpm_nums_errno = ENOSYS;
     assert(kpm_nums() == CLI_EXIT_UNSUPPORTED);
-    kpm_nums_error = 0;
+    kpm_nums_errno = 0;
     assert(kpm_nums() == CLI_EXIT_OK);
 }
 
@@ -160,11 +172,11 @@ int main(void)
 {
     test_exit_mapping_is_stable();
     test_exclude_query_exit_is_not_business_value();
-    test_exclude_query_propagates_kernel_failures();
+    test_exclude_query_preserves_bionic_errno();
     test_uid_parser_rejects_ambiguous_input();
     test_positive_mutation_return_is_success();
     test_mutation_aborts_when_pre_read_fails();
-    test_kpm_num_preserves_failure();
+    test_kpm_num_preserves_bionic_errno();
     puts("cli contract tests: PASS");
     return 0;
 }
