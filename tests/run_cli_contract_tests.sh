@@ -9,6 +9,7 @@ ${CC:-cc} \
   -Wall -Wextra -Werror \
   -I"$repo_root/src" \
   "$repo_root/tests/cli_contract_test.c" \
+  "$repo_root/src/kpatch.c" \
   "$repo_root/src/kpm.c" \
   "$repo_root/src/kpextension.c" \
   -Wl,--wrap=syscall \
