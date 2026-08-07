@@ -17,6 +17,7 @@
 #include <stdarg.h>
 #include <error.h>
 
+#include "cli_status.h"
 #include "supercall.h"
 
 uint32_t version()
@@ -25,12 +26,21 @@ uint32_t version()
     return version_code;
 }
 
-void hello()
+int hello()
 {
     long ret = sc_hello();
-    if (ret == SUPERCALL_HELLO_MAGIC) {
-        fprintf(stdout, "%s\n", SUPERCALL_HELLO_ECHO);
+    if (ret < 0)
+        return cli_report_rc("hello", ret);
+
+    if (ret != SUPERCALL_HELLO_MAGIC) {
+        fprintf(stderr,
+                "hello failed: incompatible KernelPatch handshake magic 0x%lx (expected 0x%x)\n",
+                ret, SUPERCALL_HELLO_MAGIC);
+        return CLI_EXIT_UNSUPPORTED;
     }
+
+    fprintf(stdout, "%s\n", SUPERCALL_HELLO_ECHO);
+    return CLI_EXIT_OK;
 }
 
 void kpv()
