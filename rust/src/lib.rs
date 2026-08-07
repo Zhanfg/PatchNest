@@ -16,10 +16,10 @@ pub enum CliExit {
 impl CliExit {
     pub const fn from_errno(errno: i32) -> Self {
         match errno {
-            1 | 13 => Self::Permission, // EPERM | EACCES
+            1 | 13 => Self::Permission,   // EPERM | EACCES
             38 | 95 => Self::Unsupported, // ENOSYS | EOPNOTSUPP
-            2 => Self::NotFound, // ENOENT
-            5 | 12 | 14 => Self::Io, // EIO | ENOMEM | EFAULT
+            2 => Self::NotFound,          // ENOENT
+            5 | 12 | 14 => Self::Io,      // EIO | ENOMEM | EFAULT
             _ => Self::Kernel,
         }
     }
@@ -96,7 +96,9 @@ fn parse_uid(text: &str) -> Result<u32, ParseError> {
         return Err(ParseError("UID must contain decimal digits only"));
     }
     if text != "0" && text.starts_with('0') {
-        return Err(ParseError("UID zero and leading-zero aliases are not canonical"));
+        return Err(ParseError(
+            "UID zero and leading-zero aliases are not canonical",
+        ));
     }
     text.parse::<u32>()
         .map_err(|_| ParseError("UID is outside the supported range"))
@@ -125,7 +127,10 @@ fn parse_kpm(args: &[String]) -> Result<Command, ParseError> {
                 [marker, single] if marker == "--" => Some(single.clone()),
                 _ => return Err(ParseError("kpm load accepts PATH [ARGS] or PATH -- ARGS")),
             };
-            KpmCommand::Load { path, args: kpm_args }
+            KpmCommand::Load {
+                path,
+                args: kpm_args,
+            }
         }
         "ctl0" => {
             if args.len() != 3 {
@@ -140,11 +145,15 @@ fn parse_kpm(args: &[String]) -> Result<Command, ParseError> {
             if args.len() != 2 {
                 return Err(ParseError("kpm unload requires NAME"));
             }
-            KpmCommand::Unload { name: args[1].clone() }
+            KpmCommand::Unload {
+                name: args[1].clone(),
+            }
         }
         "num" if args.len() == 1 => KpmCommand::Num,
         "list" if args.len() == 1 => KpmCommand::List,
-        "info" if args.len() == 2 => KpmCommand::Info { name: args[1].clone() },
+        "info" if args.len() == 2 => KpmCommand::Info {
+            name: args[1].clone(),
+        },
         _ => return Err(ParseError("invalid kpm command or argument count")),
     };
 
@@ -169,7 +178,9 @@ pub fn parse_command(args: &[String]) -> Result<Command, ParseError> {
             "disable" => Ok(Command::Rehook { enabled: false }),
             _ => Err(ParseError("rehook accepts enable or disable")),
         },
-        "exclude_get" if args.len() == 2 => Ok(Command::ExcludeGet { uid: parse_uid(&args[1])? }),
+        "exclude_get" if args.len() == 2 => Ok(Command::ExcludeGet {
+            uid: parse_uid(&args[1])?,
+        }),
         "exclude_set" if args.len() == 3 => Ok(Command::ExcludeSet {
             uid: parse_uid(&args[1])?,
             excluded: parse_bool01(&args[2])?,
@@ -191,7 +202,10 @@ mod tests {
     fn abi_profiles_are_not_interchangeable() {
         assert_eq!(AbiProfile::Public1158.token(), 0x1158);
         assert_eq!(AbiProfile::Next2026.token(), 0x2026);
-        assert_ne!(AbiProfile::Public1158.hello_magic(), AbiProfile::Next2026.hello_magic());
+        assert_ne!(
+            AbiProfile::Public1158.hello_magic(),
+            AbiProfile::Next2026.hello_magic()
+        );
         assert!(AbiProfile::Public1158.requires_key());
         assert!(!AbiProfile::Next2026.requires_key());
     }
