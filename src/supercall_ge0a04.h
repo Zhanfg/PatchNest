@@ -17,6 +17,15 @@
 
 #include "uapi/scdefs.h"
 
+static inline long sc_normalize_syscall_result(long rc)
+{
+    if (rc != -1)
+        return rc;
+
+    int error = errno;
+    return error > 0 ? -(long)error : -EIO;
+}
+
 static inline long ver_and_cmd(long cmd)
 {
     uint32_t version_code = (MAJOR << 16) + (MINOR << 8) + PATCH;
@@ -25,7 +34,8 @@ static inline long ver_and_cmd(long cmd)
 
 static inline long sc_hello(void)
 {
-    return syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_HELLO));
+    return sc_normalize_syscall_result(
+        syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_HELLO)));
 }
 
 static inline bool sc_ready(void)
@@ -36,7 +46,8 @@ static inline bool sc_ready(void)
 static inline long sc_klog(const char *msg)
 {
     if (!msg || strlen(msg) <= 0) return -EINVAL;
-    return syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_KLOG), msg);
+    return sc_normalize_syscall_result(
+        syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_KLOG), msg));
 }
 
 static inline uint32_t sc_kp_ver(void)
@@ -54,62 +65,75 @@ static inline uint32_t sc_k_ver(void)
 static inline long sc_kpm_load(const char *path, const char *args, void *reserved)
 {
     if (!path || strlen(path) <= 0) return -EINVAL;
-    return syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_KPM_LOAD), path, args, reserved);
+    return sc_normalize_syscall_result(
+        syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_KPM_LOAD), path, args, reserved));
 }
 
 static inline long sc_kpm_control(const char *name, const char *ctl_args, char *out_msg, long outlen)
 {
     if (!name || strlen(name) <= 0) return -EINVAL;
     if (!ctl_args || strlen(ctl_args) <= 0) return -EINVAL;
-    return syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_KPM_CONTROL), name, ctl_args, out_msg, outlen);
+    return sc_normalize_syscall_result(
+        syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_KPM_CONTROL), name, ctl_args, out_msg, outlen));
 }
 
 static inline long sc_kpm_unload(const char *name, void *reserved)
 {
     if (!name || strlen(name) <= 0) return -EINVAL;
-    return syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_KPM_UNLOAD), name, reserved);
+    return sc_normalize_syscall_result(
+        syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_KPM_UNLOAD), name, reserved));
 }
 
 static inline long sc_kpm_nums(void)
 {
-    return syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_KPM_NUMS));
+    return sc_normalize_syscall_result(
+        syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_KPM_NUMS)));
 }
 
 static inline long sc_kpm_list(char *names_buf, int buf_len)
 {
     if (!names_buf || buf_len <= 0) return -EINVAL;
-    return syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_KPM_LIST), names_buf, buf_len);
+    return sc_normalize_syscall_result(
+        syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_KPM_LIST), names_buf, buf_len));
 }
 
 static inline long sc_kpm_info(const char *name, char *buf, int buf_len)
 {
     if (!buf || buf_len <= 0) return -EINVAL;
-    return syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_KPM_INFO), name, buf, buf_len);
+    return sc_normalize_syscall_result(
+        syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_KPM_INFO), name, buf, buf_len));
 }
 
 static inline long sc_bootlog(void)
 {
-    return syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_BOOTLOG));
+    return sc_normalize_syscall_result(
+        syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_BOOTLOG)));
 }
 
 static inline long sc_panic(void)
 {
-    return syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_PANIC));
+    return sc_normalize_syscall_result(
+        syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_PANIC)));
 }
 
 static inline long sc_kstorage_read(int gid, long did, void *out_data, int offset, int dlen)
 {
-    return syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_KSTORAGE_READ), gid, did, out_data, (((long)offset << 32) | dlen));
+    return sc_normalize_syscall_result(
+        syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_KSTORAGE_READ), gid, did,
+                out_data, (((long)offset << 32) | dlen)));
 }
 
 static inline long sc_kstorage_write(int gid, long did, void *data, int offset, int dlen)
 {
-    return syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_KSTORAGE_WRITE), gid, did, data, (((long)offset << 32) | dlen));
+    return sc_normalize_syscall_result(
+        syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_KSTORAGE_WRITE), gid, did,
+                data, (((long)offset << 32) | dlen)));
 }
 
 static inline long sc_kstorage_remove(int gid, long did)
 {
-    return syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_KSTORAGE_REMOVE), gid, did);
+    return sc_normalize_syscall_result(
+        syscall(__NR_supercall, NULL, ver_and_cmd(SUPERCALL_KSTORAGE_REMOVE), gid, did));
 }
 
 static inline long sc_set_ap_mod_exclude(uid_t uid, int exclude)
