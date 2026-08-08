@@ -26,6 +26,7 @@ ${CC:-cc} \
   -Wall -Wextra -Werror \
   -I"$repo_root/src" \
   "$repo_root/tests/public1158_profile_test.c" \
+  "$repo_root/src/kpatch.c" \
   -Wl,--wrap=syscall \
   -o "$work/public1158-profile"
 
