@@ -51,11 +51,7 @@ pub struct ProbeResult {
 /// Narrow backend boundary for the future Android syscall adapter. The probe
 /// operation must be read-only. No state-changing method belongs to this trait.
 pub trait ReadOnlyProbeBackend {
-    fn hello(
-        &self,
-        profile: AbiProfile,
-        key: Option<&str>,
-    ) -> Result<u32, ProbeFailure>;
+    fn hello(&self, profile: AbiProfile, key: Option<&str>) -> Result<u32, ProbeFailure>;
 }
 
 fn classify_magic(magic: u32, authenticated: bool) -> Result<ProbeResult, ProbeError> {
@@ -95,7 +91,9 @@ pub fn probe_profile<B: ReadOnlyProbeBackend>(
         Err(other) => return Err(ProbeError::Unresolved(other)),
     }
 
-    let key = public_key.filter(|key| !key.is_empty()).ok_or(ProbeError::KeyRequired)?;
+    let key = public_key
+        .filter(|key| !key.is_empty())
+        .ok_or(ProbeError::KeyRequired)?;
     match backend.hello(AbiProfile::Public1158, Some(key)) {
         Ok(magic) => classify_magic(magic, true),
         Err(other) => Err(ProbeError::Unresolved(other)),
@@ -114,11 +112,7 @@ mod tests {
     }
 
     impl ReadOnlyProbeBackend for ScriptedBackend {
-        fn hello(
-            &self,
-            profile: AbiProfile,
-            key: Option<&str>,
-        ) -> Result<u32, ProbeFailure> {
+        fn hello(&self, profile: AbiProfile, key: Option<&str>) -> Result<u32, ProbeFailure> {
             self.calls
                 .borrow_mut()
                 .push((profile, key.map(ToOwned::to_owned)));
