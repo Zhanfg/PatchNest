@@ -1,5 +1,7 @@
 #![forbid(unsafe_code)]
 
+pub mod probe;
+
 /// Stable process exit categories shared with the hardened C CLI.
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
