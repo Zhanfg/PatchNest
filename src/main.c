@@ -26,7 +26,7 @@ static void usage(int status)
     if (status != EXIT_SUCCESS) {
         fprintf(stderr, "Try `%s --help' for more information.\n", program_name);
     } else {
-        fprintf(stdout, "\nKPatch-Next userspace cli.\n");
+        fprintf(stdout, "\nPatchNest userspace cli.\n");
         fprintf(stdout, KERNEL_PATCH_BANNER);
         fprintf(stdout,
                 " \n"
@@ -39,14 +39,15 @@ static void usage(int status)
         fprintf(stdout,
                 "\n"
                 "Commands:\n"
-                "hello              Verify the KPatch-Next userspace/kernel ABI handshake.\n"
-                "kpver              Print KPatch-Next version.\n"
+                "hello              Verify this binary's userspace/kernel ABI handshake.\n"
+                "kpver              Print KernelPatch version.\n"
                 "kver               Print Kernel version.\n"
-                "kpm                KPatch-Next Module manager.\n"
+                "kpm                KernelPatch Module manager.\n"
+                "event              Dispatch a reviewed KPM lifecycle event when supported.\n"
                 "exclude_set        Manage the exclude list.\n"
                 "exclude_get        Get exclude list status.\n"
-                "rehook             Set rehook mode (0=off, 1=target, 2=minimal).\n"
-                "rehook_status      Check current rehook mode.\n"
+                "rehook             Set rehook state when supported by this ABI.\n"
+                "rehook_status      Check current rehook state when supported.\n"
                 "\n");
     }
     exit(status);
@@ -73,6 +74,7 @@ int main(int argc, char **argv)
         { "kver", SUPERCALL_KERNEL_VER },
         { "", 'K' },
         { "kpm", 'k' },
+        { "event", 'E' },
         { "exclude_set", 'e' },
         { "exclude_get", 'g' },
         { "rehook", 'r' },
@@ -108,6 +110,8 @@ int main(int argc, char **argv)
         return CLI_EXIT_OK;
     case 'k':
         return kpm_main(argc - 1, argv + 1);
+    case 'E':
+        return event_main(argc - 2, argv + 2);
     case 'e':
         return kpexclude_set_main(argc - 2, argv + 2);
     case 'g':
