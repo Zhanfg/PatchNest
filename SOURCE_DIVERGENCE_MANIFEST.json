@@ -16,5 +16,5 @@
     "src/supercall.h",
     "src/supercall_ge0a04.h"
   ],
-  "purpose": "Intentional PatchNest CLI hardening relative to the pinned upstream userspace snapshot. All other imported source files must remain byte-identical to the pinned upstream commit."
+  "purpose": "Intentional PatchNest CLI hardening plus isolated Public1158 compatibility support relative to the pinned KPatch-Next userspace snapshot. The default kpatch target remains Next2026; kpatch-public1158 is a separate build profile with key-authenticated Public1158 semantics and conflicting capabilities such as rehook disabled. All other imported source files must remain byte-identical to the pinned upstream commit."
 }
