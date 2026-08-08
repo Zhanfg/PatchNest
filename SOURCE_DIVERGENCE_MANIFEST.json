@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "upstreamRepository": "KernelSU-Next/KPatch-Next",
+  "upstreamCommit": "0fe6d142266b80e5aa445a7ea1534f88a8f33a35",
+  "upstreamDirectory": "user",
+  "added": [
+    "src/cli_status.h"
+  ],
+  "modified": [
+    "src/kpatch.c",
+    "src/kpatch.h",
+    "src/kpextension.c",
+    "src/kpm.c",
+    "src/main.c",
+    "src/rehook.c",
+    "src/supercall.h",
+    "src/supercall_ge0a04.h"
+  ],
+  "purpose": "Intentional PatchNest CLI hardening plus isolated Public1158 compatibility support relative to the pinned KPatch-Next userspace snapshot. The default kpatch target remains Next2026; kpatch-public1158 is a separate build profile with key-authenticated Public1158 semantics and conflicting capabilities such as rehook disabled. PatchNest-Module pins a reviewed source commit for its Public1158 build rather than consuming the historical Next2026 release binary. All other imported source files must remain byte-identical to the pinned upstream commit."
+}

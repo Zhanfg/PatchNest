@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
-/* 
+/*
  * Copyright (C) 2023 bmax121. All Rights Reserved.
  */
 
@@ -9,24 +9,24 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <errno.h>
-#include <error.h>
 
 #include "../banner"
 #include "uapi/scdefs.h"
+#include "cli_status.h"
 #include "kpatch.h"
 #include "kpm.h"
 #include "kpextension.h"
 #include "rehook.h"
 
-char program_name[128] = { '\0' };
+/* Read-only reference to argv[0]. No fixed-size command buffer is mutated. */
+const char *program_name = "kpatch";
 
 static void usage(int status)
 {
     if (status != EXIT_SUCCESS) {
         fprintf(stderr, "Try `%s --help' for more information.\n", program_name);
     } else {
-        fprintf(stdout, "\nKPatch-Next userspace cli.\n");
+        fprintf(stdout, "\nPatchNest userspace cli.\n");
         fprintf(stdout, KERNEL_PATCH_BANNER);
         fprintf(stdout,
                 " \n"
@@ -39,26 +39,27 @@ static void usage(int status)
         fprintf(stdout,
                 "\n"
                 "Commands:\n"
-                "hello              If KPatch-Next installed, '%s' will be echoed.\n"
-                "kpver              Print KPatch-Next version.\n"
+                "hello              Verify this binary's userspace/kernel ABI handshake.\n"
+                "kpver              Print KernelPatch version.\n"
                 "kver               Print Kernel version.\n"
-                "kpm                KPatch-Next Module manager.\n"
+                "kpm                KernelPatch Module manager.\n"
+                "event              Dispatch a reviewed KPM lifecycle event when supported.\n"
                 "exclude_set        Manage the exclude list.\n"
                 "exclude_get        Get exclude list status.\n"
-                "rehook             Set rehook mode (0=off, 1=target, 2=minimal).\n"
-                "rehook_status      Check current rehook mode.\n"
-                "\n",
-                SUPERCALL_HELLO_ECHO);
+                "rehook             Set rehook state when supported by this ABI.\n"
+                "rehook_status      Check current rehook state when supported.\n"
+                "\n");
     }
     exit(status);
 }
 
-// todo: refactor
 int main(int argc, char **argv)
 {
-    strcat(program_name, argv[0]);
+    if (argv && argv[0] && argv[0][0] != '\0')
+        program_name = argv[0];
 
-    if (argc == 1) usage(EXIT_FAILURE);
+    if (argc == 1)
+        usage(CLI_EXIT_USAGE);
 
     const char *scmd = argv[1];
     int cmd = -1;
@@ -73,71 +74,67 @@ int main(int argc, char **argv)
         { "kver", SUPERCALL_KERNEL_VER },
         { "", 'K' },
         { "kpm", 'k' },
+        { "event", 'E' },
         { "exclude_set", 'e' },
         { "exclude_get", 'g' },
         { "rehook", 'r' },
         { "rehook_status", 'q' },
-
         { "bootlog", 'l' },
         { "panic", '.' },
-
         { "--help", 'h' },
         { "-h", 'h' },
         { "--version", 'v' },
         { "-v", 'v' },
     };
 
-    for (int i = 0; i < sizeof(cmd_arr) / sizeof(cmd_arr[0]); i++) {
-        if (strcmp(scmd, cmd_arr[i].scmd)) continue;
+    for (size_t i = 0; i < sizeof(cmd_arr) / sizeof(cmd_arr[0]); i++) {
+        if (strcmp(scmd, cmd_arr[i].scmd))
+            continue;
         cmd = cmd_arr[i].cmd;
         break;
     }
 
-    if (cmd < 0) error(-EINVAL, 0, "Invalid command: %s!\n", scmd);
+    if (cmd < 0) {
+        fprintf(stderr, "Invalid command: %s\n", scmd);
+        return CLI_EXIT_USAGE;
+    }
 
     switch (cmd) {
     case SUPERCALL_HELLO:
-        hello();
-        return 0;
+        return hello();
     case SUPERCALL_KERNELPATCH_VER:
         kpv();
-        return 0;
+        return CLI_EXIT_OK;
     case SUPERCALL_KERNEL_VER:
         kv();
-        return 0;
+        return CLI_EXIT_OK;
     case 'k':
-        strcat(program_name, " kpm");
         return kpm_main(argc - 1, argv + 1);
+    case 'E':
+        return event_main(argc - 2, argv + 2);
     case 'e':
-        strcat(program_name, " exclude_set");
         return kpexclude_set_main(argc - 2, argv + 2);
     case 'g':
-        strcat(program_name, " exclude_get");
         return kpexclude_get_main(argc - 2, argv + 2);
     case 'r':
-        strcat(program_name, " rehook");
         return kprehook_main(argc - 2, argv + 2);
     case 'q':
-        strcat(program_name, " rehook_status");
         return kprehook_status_main(argc - 2, argv + 2);
     case 'l':
         bootlog();
-        break;
+        return CLI_EXIT_OK;
     case '.':
         panic();
-        break;
-
+        return CLI_EXIT_OK;
     case 'h':
         usage(EXIT_SUCCESS);
         break;
     case 'v':
         fprintf(stdout, "%x\n", version());
-        break;
-
+        return CLI_EXIT_OK;
     default:
-        fprintf(stderr, "Invalid command: %s!\n", scmd);
-        return -EINVAL;
+        return CLI_EXIT_USAGE;
     }
 
-    return 0;
+    return CLI_EXIT_OK;
 }

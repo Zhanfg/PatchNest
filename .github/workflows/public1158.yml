@@ -1,0 +1,75 @@
+name: Public1158 compatibility
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'CMakeLists.txt'
+      - 'src/**'
+      - 'tests/public1158_profile_test.c'
+      - 'tests/run_cli_contract_tests.sh'
+      - '.github/workflows/public1158.yml'
+  push:
+    branches:
+      - 'fix/**'
+    paths:
+      - 'CMakeLists.txt'
+      - 'src/**'
+      - 'tests/public1158_profile_test.c'
+      - 'tests/run_cli_contract_tests.sh'
+      - '.github/workflows/public1158.yml'
+  workflow_dispatch:
+
+jobs:
+  public1158:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+
+      - name: Host ABI contract
+        run: sh tests/run_cli_contract_tests.sh
+
+      - name: Setup Android NDK
+        id: ndk
+        uses: nttld/setup-ndk@ed92fe6cadad69be94a966a7ee3271275e62f779
+        with:
+          ndk-version: r26b
+
+      - name: Configure Android ARM64
+        run: |
+          cmake -S . -B build/public1158 \
+            -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="${{ steps.ndk.outputs.ndk-path }}/build/cmake/android.toolchain.cmake" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DANDROID_PLATFORM=android-33 \
+            -DANDROID_ABI=arm64-v8a
+
+      - name: Build isolated Public1158 binary
+        run: cmake --build build/public1158 --target kpatch-public1158 --parallel
+
+      - name: Inspect Android ABI
+        run: |
+          set -euo pipefail
+          binary=build/public1158/kpatch-public1158
+          test -s "$binary"
+          description=$(file "$binary")
+          echo "$description"
+          printf '%s' "$description" | grep -q 'ELF 64-bit.*ARM aarch64'
+          printf '%s' "$description" | grep -q 'pie executable'
+          strings "$binary" | grep -Fxq 'public1158'
+          strings "$binary" | grep -Fxq 'hello1158'
+          if strings "$binary" | grep -Fxq 'hello2026'; then
+            echo '::error::Public1158 binary unexpectedly contains Next2026 hello contract'
+            exit 1
+          fi
+
+      - name: Upload compatibility binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: kpatch-public1158-android-arm64
+          path: build/public1158/kpatch-public1158
+          if-no-files-found: error
