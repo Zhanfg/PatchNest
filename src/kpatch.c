@@ -32,14 +32,14 @@ int hello()
     if (ret < 0)
         return cli_report_rc("hello", ret);
 
-    if (ret != SUPERCALL_HELLO_MAGIC) {
+    if (ret != (long)sc_expected_hello_magic()) {
         fprintf(stderr,
-                "hello failed: incompatible KernelPatch handshake magic 0x%lx (expected 0x%x)\n",
-                ret, SUPERCALL_HELLO_MAGIC);
+                "hello failed: incompatible KernelPatch handshake magic 0x%lx (expected 0x%x for %s)\n",
+                ret, sc_expected_hello_magic(), sc_abi_name());
         return CLI_EXIT_UNSUPPORTED;
     }
 
-    fprintf(stdout, "%s\n", SUPERCALL_HELLO_ECHO);
+    fprintf(stdout, "%s\n", sc_expected_hello_echo());
     return CLI_EXIT_OK;
 }
 
