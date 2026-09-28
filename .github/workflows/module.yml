@@ -1,0 +1,146 @@
+name: Module CI
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'module/**'
+      - '.github/workflows/module.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'module/**'
+      - '.github/workflows/module.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: module
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.28.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: module/webui/pnpm-lock.yaml
+
+      - name: Install validation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck jq
+
+      - name: Verify release metadata
+        run: |
+          set -euo pipefail
+          prop_version=$(sed -n 's/^version=//p' module/module.prop)
+          json_version=$(jq -r '.version' update.json)
+          prop_code=$(sed -n 's/^versionCode=//p' module/module.prop)
+          json_code=$(jq -r '.versionCode' update.json)
+          test "$prop_version" = "$json_version"
+          test "$prop_code" = "$json_code"
+
+          zip_url=$(jq -r '.zipUrl' update.json)
+          case "$zip_url" in
+            https://github.com/Zhanfg/PatchNest-Module/releases/download/v"$json_version"/*) ;;
+            https://github.com/Zhanfg/PatchNest/releases/download/module-v"$json_version"/*) ;;
+            *) echo "::error::Unexpected module release URL: $zip_url"; exit 1 ;;
+          esac
+          jq -r '.zipSha256' update.json | grep -Eq '^[0-9a-f]{64}$'
+
+          for key in patchnest kernelpatch magiskboot; do
+            grep -Fq "${key}=" version.properties
+          done
+
+      - name: Check shell syntax and ShellCheck
+        run: |
+          set -euo pipefail
+          for file in build.sh module/*.sh module/patch/*.sh; do bash -n "$file"; done
+          shellcheck -s bash -S error build.sh
+          shellcheck -s sh -S warning \
+            --exclude=SC3043,SC2034,SC2115,SC2046,SC2319,SC2155 \
+            module/service.sh module/customize.sh module/post-fs-data.sh \
+            module/action.sh module/status.sh module/uninstall.sh \
+            module/install_kpm.sh module/compile_kpm.sh \
+            module/patch/boot_patch.sh module/patch/boot_extract.sh \
+            module/patch/boot_unpatch.sh
+
+      - name: Verify locale completeness
+        run: |
+          set -euo pipefail
+          extract_keys() { grep -oP 'name="\K[^"]+' "$1" | sort; }
+          extract_keys webui/public/locales/strings/en.xml > /tmp/base-keys
+          fail=0
+          for file in webui/public/locales/strings/*.xml; do
+            [ "$(basename "$file")" = en.xml ] && continue
+            extract_keys "$file" > /tmp/lang-keys
+            missing=$(comm -23 /tmp/base-keys /tmp/lang-keys)
+            if [ -n "$missing" ]; then
+              echo "::error file=$file::Missing locale keys: $missing"
+              fail=1
+            fi
+          done
+          exit "$fail"
+
+      - name: Test and build WebUI
+        run: |
+          pnpm --dir webui install --frozen-lockfile
+          pnpm --dir webui test
+          pnpm --dir webui build
+
+      - name: Validate checked-in KPM fixtures
+        run: node tests/validate_kpm.js
+
+  package:
+    needs: validate
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: module
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          fetch-depth: 0
+
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@ed92fe6cadad69be94a966a7ee3271275e62f779
+        with:
+          ndk-version: r26d
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.28.2
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+
+      - name: Install package tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq zip unzip file
+
+      - name: Build complete module
+        run: bash build.sh
+
+      - name: Validate complete module
+        run: node tests/validate_module.js
+
+      - name: Verify package exists
+        run: test -n "$(find out -maxdepth 1 -name 'PatchNest-*.zip' -print -quit)"
+
+      - name: Upload module package
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: patchnest-module-${{ github.sha }}
+          path: module/out/*.zip
+          if-no-files-found: error
+          retention-days: 14
