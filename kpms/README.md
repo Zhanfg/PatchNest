@@ -1,6 +1,6 @@
 # PatchNest KPM Repository
 
-Official KPM catalog and source workspace for [`PatchNest-Module`](https://github.com/Zhanfg/PatchNest-Module).
+Official KPM catalog and source workspace for the [`module/`](https://github.com/Zhanfg/PatchNest/tree/main/module) component of the PatchNest monorepo.
 
 KernelPatch SDK canonical source: [`Zhanfg/KernelPatch-Public`](https://github.com/Zhanfg/KernelPatch-Public). The legacy `ZhanfgBuild/KernelPatch` predecessor is retained only for provenance and must not be used for new PatchNest builds.
 
@@ -11,7 +11,7 @@ The public catalog is intentionally empty while the existing six source files ar
 The previous catalog contained placeholder or nonexistent downloads, including `example.com` URLs and assets under the retired `KPatch-Next-Module` name. Those entries have been removed so PatchNest no longer offers broken or unverified installations.
 
 ```text
-https://raw.githubusercontent.com/Zhanfg/PatchNest-Kpms/main/kpm_repo.json
+https://raw.githubusercontent.com/Zhanfg/PatchNest/main/kpms/kpm_repo.json
 ```
 
 An empty `modules` array is valid. PatchNest WebUI will display that no verified modules are currently available.
