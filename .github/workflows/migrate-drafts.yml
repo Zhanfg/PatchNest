@@ -32,7 +32,16 @@ jobs:
         run: |
           set -euo pipefail
           git checkout -B migration/kpms-diagnostic origin/merge/patchnest-monorepo
-          git subtree pull --prefix=kpms patchnest-kpms fix/diagnostic-build-integrity
+          if ! git subtree pull --prefix=kpms patchnest-kpms fix/diagnostic-build-integrity; then
+            conflicts=$(git diff --name-only --diff-filter=U)
+            test "$conflicts" = "kpms/README.md" || {
+              echo "::error::Unexpected KPM subtree conflicts: $conflicts"
+              exit 1
+            }
+            git checkout --ours kpms/README.md
+            git add kpms/README.md
+            git commit -m "[Migration] Resolve KPM README path conflict"
+          fi
           git push origin HEAD:refs/heads/migration/kpms-diagnostic
 
       - name: Migrate Module reviewed flash-readiness draft
