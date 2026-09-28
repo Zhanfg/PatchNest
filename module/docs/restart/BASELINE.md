@@ -10,10 +10,10 @@ This branch restores a trustworthy build baseline before feature work resumes. I
 
 | Repository | Responsibility | Current restart status |
 |---|---|---|
-| `Zhanfg/PatchNest-Module` | Root-manager module, WebUI, packaging and update entry point | Baseline repair in progress |
+| `Zhanfg/PatchNest` / `module/` | Root-manager module, WebUI, packaging and update entry point | Baseline repair in progress |
 | `Zhanfg/KernelPatch-Public` | `kpimg` and `kptools` source/releases | Release assets available; source/release provenance review pending |
 | `Zhanfg/PatchNest` | `kpatch-android` release | Binary exists; reproducible source restoration pending |
-| `Zhanfg/PatchNest-Kpms` | KPM source and catalog | Catalog and release pipeline repair pending |
+| `Zhanfg/PatchNest` / `kpms/` | KPM source and catalog | Catalog and release pipeline repair pending |
 
 ## Baseline defects confirmed
 
