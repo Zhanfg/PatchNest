@@ -1,6 +1,6 @@
 # PatchNest CLI
 
-PatchNest CLI is the standalone Android `kpatch` user-space client consumed by [`PatchNest-Module`](https://github.com/Zhanfg/PatchNest-Module).
+PatchNest CLI is the standalone Android `kpatch` user-space client consumed by the [`module/`](../module/) component of the PatchNest monorepo.
 
 ## Source provenance
 
