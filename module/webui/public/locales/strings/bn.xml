@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- UI Labels -->
+    <string name="title_patch">প্যাচ</string>
+    <string name="title_unpatch">আনপ্যাচ</string>
+    <string name="title_kpmodule">KPModule</string>
+    <string name="title_exclude">বাদ দিন</string>
+    <string name="title_settings">সেটিংস</string>
+    <string name="title_home">হোম</string>
+    <string name="title_language">ভাষা</string>
+    <string name="title_control_kpmodule">KPModule নিয়ন্ত্রণ</string>
+    <string name="title_select_language">ভাষা নির্বাচন করুন</string>
+    <string name="title_reboot">রিবুট</string>
+    <string name="title_reboot_recovery">রিকভারিতে রিবুট</string>
+    <string name="title_reboot_bootloader">বুটলোডারে রিবুট</string>
+    <string name="title_reboot_download">ডাউনলোডে রিবুট</string>
+    <string name="title_reboot_edl">EDL-এ রিবুট</string>
+    <string name="title_kernel">কার্নেল</string>
+    <string name="title_rehook_syscall">রিহুক Syscall</string>
+    <!-- Buttons -->
+    <string name="button_install">ইনস্টল করতে ক্লিক করুন</string>
+    <string name="button_uninstall">আনইনস্টল</string>
+    <string name="button_embed_kpm">KPM এম্বেড করুন</string>
+    <string name="button_start">শুরু করুন</string>
+    <string name="button_unpatch">আনপ্যাচ</string>
+    <string name="button_cancel">বাতিল</string>
+    <string name="button_ok">ঠিক আছে</string>
+    <string name="button_load">লোড করুন</string>
+    <string name="button_unload">আনলোড করুন</string>
+    <string name="button_refresh">রিফ্রেশ</string>
+    <!-- Labels -->
+    <string name="label_input_control_parameters">নিয়ন্ত্রণ প্যারামিটার ইনপুট করুন:</string>
+    <string name="label_parameters">প্যারামিটার</string>
+    <string name="label_load_temporarily">সাময়িকভাবে লোড করুন</string>
+    <string name="label_show_system_app">সিস্টেম অ্যাপ দেখান</string>
+    <string name="label_system_default">সিস্টেম ডিফল্ট</string>
+    <string name="label_trigger_event">ট্রিগার ইভেন্ট</string>
+    <!-- Status -->
+    <string name="status_not_installed">ইনস্টল করা নেই</string>
+    <string name="status_working">কাজ করছে 😋</string>
+    <string name="status_loading">লোড হচ্ছে...</string>
+    <!-- Info -->
+    <string name="info_kernel_version">কার্নেল সংস্করণ</string>
+    <string name="info_system_version">সিস্টেম সংস্করণ</string>
+    <string name="info_fingerprint">ফিঙ্গারপ্রিন্ট</string>
+    <string name="info_selinux_status">SELinux স্ট্যাটাস</string>
+    <string name="info_version">সংস্করণ: %1$s</string>
+    <string name="info_time">সময়: %1$s</string>
+    <string name="info_config">কনফিগ: %1$s</string>
+    <string name="info_slot">স্লট: %1$s</string>
+    <string name="info_device">ডিভাইস: %1$s</string>
+    <string name="info_device_unknown">ডিভাইস: অজানা</string>
+    <string name="info_author">লেখক: %1$s</string>
+    <string name="info_args">Args: %1$s</string>
+    <string name="info_no_description">কোনো বর্ণনা নেই</string>
+    <string name="info_embedded">এম্বেডেড</string>
+    <string name="info_user">ব্যবহারকারী %1$s</string>
+    <string name="info_system">সিস্টেম</string>
+    <!-- Messages -->
+    <string name="msg_no_module_loaded">কোনো মডিউল লোড করা নেই</string>
+    <string name="msg_no_app_found">কোনো অ্যাপ পাওয়া যায়নি</string>
+    <string name="msg_no_module_found">কোনো মডিউল পাওয়া যায়নি</string>
+    <string name="msg_module_loaded">%1$s লোড করা হবে।</string>
+    <string name="msg_unload_module">%1$s মডিউল আনলোড করবেন?</string>
+    <string name="msg_redirecting_to">%1$s-এ রিডাইরেক্ট করা হচ্ছে</string>
+    <string name="msg_failed_open_link"><string name="msg_failed_open_link">exec দিয়ে লিঙ্ক খুলতে ব্যর্থ</string></string>
+    <string name="msg_invalid_link">Invalid link — only http/https URLs are allowed</string>
+    <string name="msg_failed_parse_kernel">কার্নেল পার্স করতে ব্যর্থ:</string>
+    <string name="msg_boot_extract_failed">বুট এক্সট্র্যাক্ট ব্যর্থ</string>
+    <string name="msg_failed_locate_boot"><string name="msg_failed_locate_boot">বুট ইমেজ খুঁজে পেতে ব্যর্থ</string></string>
+    <string name="msg_failed_unpack_boot">Failed to unpack boot image</string>
+    <string name="msg_invalid_kpm_file">অবৈধ KPM ফাইল</string>
+    <string name="msg_could_not_parse_kpm">KPM তথ্য পার্স করা যায়নি</string>
+    <string name="msg_error_no_boot_image">ত্রুটি: কোনো বুট ইমেজ পাওয়া যায়নি।</string>
+    <string name="msg_please_select_file">অনুগ্রহ করে একটি %1$s ফাইল নির্বাচন করুন</string>
+    <string name="msg_please_wait">অনুগ্রহ করে অপেক্ষা করুন...</string>
+    <string name="msg_uploading">আপলোড হচ্ছে... </string>
+    <string name="msg_upload_cancelled">আপলোড বাতিল করা হয়েছে</string>
+    <string name="msg_error">ত্রুটি: %1$s</string>
+    <string name="msg_successfully_loaded">%1$s সফলভাবে লোড হয়েছে</string>
+    <string name="msg_failed_load_module">%1$s মডিউল লোড করতে ব্যর্থ</string>
+    <string name="msg_failed_get_module_info">মডিউল তথ্য পেতে ব্যর্থ</string>
+    <string name="msg_error_loading_apps">অ্যাপ লোড করতে ত্রুটি: </string>
+    <string name="msg_error_rendering_apps">অ্যাপ রেন্ডার করতে ত্রুটি: </string>
+    <string name="msg_unknown">অজানা</string>
+    <string name="title_logs">Logs</string>
+    <string name="title_backups">Backups</string>
+    <string name="title_repository">Repository</string>
+    <string name="title_repo_url">Repository URL</string>
+    <string name="title_binary_source">Binary Source</string>
+    <string name="title_select_source">Select Binary Source</string>
+    <string name="button_save_to_storage">Save to storage</string>
+    <string name="button_delete">Delete</string>
+    <string name="label_flash_to_device">Flash to Device</string>
+    <string name="desc_patchnest">Standalone implementation, extended kernel support (3.18-6.12)</string>
+    <string name="desc_kernelpatch">Original project, active security updates</string>
+    <string name="msg_no_log">No log available</string>
+    <string name="msg_no_backups">No backups available</string>
+    <string name="msg_log_cleared">Log cleared</string>
+    <string name="msg_backup_saved">Backup saved to Download</string>
+    <string name="msg_backup_deleted"><string name="msg_backup_deleted">Backup deleted</string></string>
+    <string name="confirm_delete_backup">Delete backup "%1$s"?</string>
+    <string name="msg_source_switched">Source switched, reboot to apply</string>
+    <string name="msg_source_reboot">* Reboot required to apply</string>
+    <string name="msg_installing_kpm">Installing KPM package...</string>
+    <string name="msg_kpm_installed">KPM package installed successfully</string>
+    <string name="msg_no_modules_in_repo">No modules available in repository</string>
+    <string name="msg_repo_fetch_failed">Failed to fetch repository</string>
+    <string name="msg_no_download_url">No download URL available</string>
+    <string name="msg_repo_url_updated">Repository URL updated</string>
+    <string name="title_what_is_new">What's New</string>
+    <string name="button_close">Close</string>
+    <string name="button_view_full_changelog">View full changelog</string>
+    <!-- Theme picker -->
+    <string name="title_theme">থিম</string>
+    <string name="title_select_theme">থিম নির্বাচন করুন</string>
+    <string name="theme_auto">সিস্টেম অনুসরণ করুন</string>
+    <string name="theme_light">হালকা</string>
+    <string name="theme_dark">অন্ধকার</string>
+    <!-- Safe mode indicator -->
+    <string name="title_safemode">নিরাপদ মোড</string>
+    <string name="status_safemode_on">সক্রিয় — SU এবং KPMs ব্লক করা আছে</string>
+    <string name="status_safemode_off">বন্ধ</string>
+    <string name="status_safemode_unknown">অজানা (kp-safemode ইনস্টল নেই)</string>
+    <!-- Patch step progress -->
+    <string name="title_progress">অগ্রগতি</string>
+    <string name="patch_step_extract">boot ইমেজ সনাক্ত ও বের করা</string>
+    <string name="patch_step_validate">এম্বেডেড KPM যাচাই</string>
+    <string name="patch_step_patch">কার্নেল প্যাচ</string>
+    <string name="patch_step_repack">boot ইমেজ পুনঃপ্যাক</string>
+    <string name="patch_step_flash">ডিভাইসে ফ্ল্যাশ</string>
+    <string name="patch_step_unpatch">কার্নেল আনপ্যাচ</string>
+    <!-- Backup SHA256 -->
+    <string name="button_copy_hash">SHA256 কপি করুন</string>
+    <string name="msg_hash_copied">SHA256 কপি করা হয়েছে</string>
+    <string name="msg_hash_copy_failed">কপি ব্যর্থ</string>
+    <!-- Boot/kernel metadata -->
+    <string name="info_security_patch">নিরাপত্তা প্যাচ: %1</string>
+    <string name="info_os_version">OS সংস্করণ: %1</string>
+    <string name="info_size">আকার: %1</string>
+    <!-- KPM filter chips -->
+    <string name="filter_all">সব</string>
+    <string name="filter_loaded">লোড করা</string>
+    <string name="filter_with_event">ইভেন্ট সহ</string>
+    <!-- Exclude list import/export -->
+    <string name="button_export">রপ্তানি</string>
+    <string name="button_import">আমদানি</string>
+    <string name="msg_export_empty">রপ্তানির জন্য কোনো বাতিল অ্যাপ নেই</string>
+    <string name="msg_export_success">%1-তে রপ্তানি হয়েছে</string>
+    <string name="msg_export_failed">রপ্তানি ব্যর্থ</string>
+    <string name="msg_import_success">%1 অ্যাপ আমদানি হয়েছে</string>
+    <string name="msg_import_failed">আমদানি ব্যর্থ: %1</string>
+    <!-- Update checker -->
+    <string name="title_update_available">আপডেট উপলব্ধ</string>
+    <string name="title_check_update">আপডেট চেক করুন</string>
+    <string name="update_new_version">নতুন সংস্করণ</string>
+    <string name="update_current">বর্তমানে ইনস্টল করা: %1</string>
+    <string name="update_hint">PatchNest এর একটি নতুন সংস্করণ উপলব্ধ। ডাউনলোড টিপে আপনার ব্রাউজারে রিলিজ পেজ খুলুন।</string>
+    <string name="update_available">%1 উপলব্ধ</string>
+    <string name="update_up_to_date">হালনাগাদ</string>
+    <string name="update_download_started">ডাউনলোড খুলছে...</string>
+    <string name="update_download_failed">ডাউনলোড খুলতে পারেনি</string>
+    <string name="update_no_url"><string name="update_no_url">update.json এ কোনো ডাউনলোড URL নেই</string></string>
+    <string name="update_invalid_url">Invalid download URL — only http/https links are accepted</string>
+    <string name="button_later">পরে</string>
+    <string name="button_download">ডাউনলোড</string>
+    <string name="status_checking">যাচাই হচ্ছে...</string>
+    <!-- Multi-repo manager -->
+    <string name="title_repo_manager">রিপোজিটরি পরিচালনা</string>
+    <string name="button_add_repo">রিপোজিটরি যোগ করুন</string>
+    <string name="button_save">সংরক্ষণ</string>
+    <string name="repo_official">অফিসিয়াল</string>
+    <string name="repo_main">প্রধান</string>
+    <string name="repo_more">আরও</string>
+    <string name="repo_placeholder_name">প্রদর্শন নাম</string>
+    <!-- Backup purge -->
+    <string name="title_purge_backups">পুরানো ব্যাকআপ মুছুন</string>
+    <string name="label_keep_count">সর্বাধিক সাম্প্রতিক ব্যাকআপ রাখুন:</string>
+    <string name="button_purge">মুছুন</string>
+    <string name="button_purge_old">পুরানো ব্যাকআপ মুছুন</string>
+    <string name="purge_none_to_delete">মোছার মতো কিছু নেই — আপনার ধারণ সংখ্যা সমস্ত বর্তমান ব্যাকআপ কভার করে।</string>
+    <string name="purge_will_delete">%1টি পুরানো ব্যাকআপ মুছে ফেলা হবে।</string>
+    <string name="msg_purged">%1টি পুরানো ব্যাকআপ মুছে ফেলা হয়েছে</string>
+    <!-- Exclude profiles -->
+    <string name="title_profiles">প্রোফাইল</string>
+    <string name="title_save_profile">প্রোফাইল সংরক্ষণ</string>
+    <string name="title_load_profile">প্রোফাইল লোড</string>
+    <string name="label_profile_name">প্রোফাইলের নাম:</string>
+    <string name="label_select_profile">প্রয়োগ করতে একটি প্রোফাইল নির্বাচন করুন:</string>
+    <string name="button_save_profile">বর্তমানটি প্রোফাইল হিসেবে সংরক্ষণ</string>
+    <string name="button_load_profile">প্রোফাইল লোড</string>
+    <string name="profile_count">%1টি অ্যাপ</string>
+    <string name="msg_no_profiles">কোনো সংরক্ষিত প্রোফাইল নেই</string>
+    <string name="msg_profile_saved">প্রোফাইল "%1" সংরক্ষিত</string>
+    <string name="msg_profile_loaded">প্রোফাইল "%1" প্রয়োগ করা হয়েছে</string>
+    <string name="info_root_manager">রুট ম্যানেজার</string>
+    <string name="title_module_config">মডিউল কনফিগ</string>
+    <string name="label_config_key">কনফিগ কী</string>
+    <string name="label_config_value">কনফিগ মান</string>
+    <string name="button_save_config">কনফিগ সংরক্ষণ</string>
+    <string name="button_open_in_ksu">KSU ম্যানেজারে খুলুন</string>
+    <string name="msg_module_disabled">ম্যানেজারে মডিউল নিষ্ক্রিয় করা হয়েছে</string>
+    <string name="msg_no_config">কোনো কনফিগ এন্ট্রি নেই — নীচে "key=value" টাইপ করুন এবং সংরক্ষণ টিপুন</string>
+
+      <string name="title_stealth">Stealth</string>
+      <string name="title_stealth_center">Stealth Center</string>
+      <string name="subtitle_stealth_center">Toggle each KernelPatch module to hide root/hook signals from app scanners. Changes apply on next boot.</string>
+      <string name="msg_no_stealth_modules">No stealth modules installed. Install from the Repository tab.</string>
+      <string name="stealth_hint_reboot">Takes effect on next boot</string>
+      <string name="toast_stealth_enabled">%1$s enabled. Reboot to apply.</string>
+      <string name="toast_stealth_disabled">%1$s disabled. Reboot to apply.</string>
+      <string name="title_kpm_sig_policy">KPM signature check</string>
+      <string name="sig_policy_off">Off — load everything (no checks)</string>
+      <string name="sig_policy_warn">Warn — load everything, flag unsigned</string>
+      <string name="sig_policy_strict">Strict — reject unsigned</string>
+      <string name="sig_policy_off_short">Off</string>
+      <string name="sig_policy_warn_short">Warn</string>
+      <string name="sig_policy_strict_short">Strict</string>
+      <string name="title_unsigned_modules_warning">Unsigned KPM modules loaded</string>
+      <string name="unsigned_modules_count">%1$d module(s) loaded without a signature: %2$s. See /data/adb/patchnest/unsigned_modules.log</string>
+      <string name="toast_sig_policy_saved">Signature policy saved. Reboot to apply.</string>
+      <string name="update_verify_sha">Verify SHA-256 starts with: %1$s</string>
+      <string name="update_unsigned_warning">This update is NOT signed. Refusing to download for safety. Please install manually after verifying the release.</string>
+      <string name="tag_signed">Signed</string>
+      <string name="kpm_stat_state">State</string>
+      <string name="kpm_stat_size">Size</string>
+      <string name="kpm_stat_uptime">Uptime</string>
+      <string name="kpm_stat_last_event">Last event</string>
+      <string name="kpm_stat_filters">Filters</string>
+      <string name="kpm_stat_errors">Errors</string>
+      <string name="kpm_stat_build">Build</string>
+      <string name="kpm_stat_unsigned_warn">Warning: unsigned module loaded (warn policy)</string>
+      <string name="kpm_stat_just_now">just now</string>
+      <string name="kpm_state_loaded">Loaded</string>
+      <string name="kpm_state_failed">Failed</string>
+      <string name="kpm_state_pending">Pending</string>
+      <string name="kpm_state_unknown">Unknown</string>
+      <string name="kpm_hero_ok">System OK · %1$d loaded · %2$d failed</string>
+      <string name="kpm_hero_down">System DEGRADED · %1$d loaded · %2$d failed</string>
+      <string name="kpm_hero_empty">No KPM modules loaded</string>
+      <string name="kpm_dashboard_full_title">KPM dashboard</string>
+      <string name="kpm_dashboard_expand">View full dashboard</string>
+      <string name="kpm_update_badge">Update: %1$s</string>
+      <string name="kpm_update_available_tooltip">Installed: %1$s — newer version available: %2$s</string>
+      <string name="kpm_update_button_title">Install update from repository</string>
+      <string name="kpm_updates_available_toast">%1$d KPM update(s) available — open the KPM page to upgrade</string>
+      <string name="title_install_from_url">Install KPM from URL</string>
+      <string name="hint_install_from_url">Direct link to a .kpm or .zip file. SHA256-verified modules are preferred.</string>
+      <string name="title_auto_unpatch">Auto-Unpatch Recovery Plan</string>
+      <string name="button_continue">Continue</string>
+      <string name="yes">yes</string>
+      <string name="no">no</string>
+      <string name="auto_unpatch_summary">Your backup is: %1$s (%2$s)\nVerified: %3$s</string>
+      <string name="auto_unpatch_no_backup">No backup found. Auto-unpatch cannot run safely.</string>
+      <string name="auto_unpatch_no_backup_warn">Proceeding will leave the device in an unpatched state with no recovery path.</string>
+      <string name="auto_unpatch_unverified_warn">This backup was NOT verified by magiskboot — proceed at your own risk.</string>
+      <string name="auto_unpatch_lose">If auto_unpatch runs, you will LOSE:</string>
+      <string name="auto_unpatch_lose_kp_patches">Kp kernel patches (kimg -Y)</string>
+      <string name="auto_unpatch_lose_kpm_modules">All loaded KPM modules (stealth-*, selinux_hook, etc.)</string>
+      <string name="auto_unpatch_lose_nothing">No Kp-specific state recorded in the backup.</string>
+      <string name="auto_unpatch_keep">You will KEEP:</string>
+      <string name="auto_unpatch_keep_magisk">Magisk root (AK3, version %1$s)</string>
+      <string name="auto_unpatch_keep_ksu">KernelSU (version %1$s)</string>
+      <string name="auto_unpatch_keep_non_kp">All non-Kp modifications in the backup.</string>
+      <string name="auto_unpatch_keep_unknown">Unknown — manifest not found for this backup.</string>
+      <string name="msg_unpatch_done">Unpatch complete.</string>
+      <string name="msg_unpatch_failed">Unpatch failed: %1$s</string>
+      <string name="msg_cancelled">Cancelled.</string>
+</resources>

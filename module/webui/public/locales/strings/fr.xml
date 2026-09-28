@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- UI Labels -->
+    <string name="title_patch">Patcher</string>
+    <string name="title_unpatch">Dépatcher</string>
+    <string name="title_kpmodule">Module KPM</string>
+    <string name="title_exclude">Exclure</string>
+    <string name="title_settings">Paramètres</string>
+    <string name="title_home">Accueil</string>
+    <string name="title_language">Langue</string>
+    <string name="title_control_kpmodule">Contrôler le module KPM</string>
+    <string name="title_select_language">Sélectionner la langue</string>
+    <string name="title_reboot">Redémarrer</string>
+    <string name="title_reboot_recovery">Redémarrer en mode Récupération</string>
+    <string name="title_reboot_bootloader">Redémarrer vers le Bootloader</string>
+    <string name="title_reboot_download">Redémarrer en mode Téléchargement</string>
+    <string name="title_reboot_edl">Redémarrer en mode EDL</string>
+    <string name="title_rehook_syscall">Rehook Syscall</string>
+    <!-- Buttons -->
+    <string name="button_install">Appuyez pour installer</string>
+    <string name="button_uninstall">Désinstaller</string>
+    <string name="button_embed_kpm">Intégrer un module KPM</string>
+    <string name="button_start">Démarrer</string>
+    <string name="button_unpatch">Dépatcher</string>
+    <string name="button_cancel">Annuler</string>
+    <string name="button_load">Charger</string>
+    <string name="button_unload">Décharger</string>
+    <string name="button_refresh">Recharger</string>
+    <!-- Labels -->
+    <string name="label_input_control_parameters">Entrez les commandes de réglage:</string>
+    <string name="label_parameters">Réglages</string>
+    <string name="label_load_temporarily">Charger temporairement</string>
+    <string name="label_show_system_app">Afficher les applications système</string>
+    <string name="label_system_default">Paramètre système par défaut</string>
+    <string name="label_trigger_event">Déclencher un événement</string>
+    <!-- Status -->
+    <string name="status_not_installed">Non installé</string>
+    <string name="status_working">En fonctionnement 😋</string>
+    <string name="status_loading">Chargement...</string>
+    <!-- Info -->
+    <string name="info_kernel_version">Version du kernel</string>
+    <string name="info_system_version">Version du système</string>
+    <string name="info_fingerprint">Empreinte</string>
+    <string name="info_selinux_status">État de SELinux</string>
+    <string name="info_version">Version: %1$s</string>
+    <string name="info_time">Date: %1$s</string>
+    <string name="info_config">Configuration: %1$s</string>
+    <string name="info_slot">Emplacement: %1$s</string>
+    <string name="info_device">Appareil: %1$s</string>
+    <string name="info_device_unknown">Appareil: Inconnu</string>
+    <string name="info_author">Auteur: %1$s</string>
+    <string name="info_args">Arguments: %1$s</string>
+    <string name="info_no_description">Aucune description</string>
+    <string name="info_embedded">INTÉGRÉ</string>
+    <string name="info_user">UTILISATEUR %1$s</string>
+    <string name="info_system">SYSTÈME</string>
+    <!-- Messages -->
+    <string name="msg_no_module_loaded">Aucun module chargé</string>
+    <string name="msg_no_app_found">Aucune application trouvée</string>
+    <string name="msg_no_module_found">Aucun module trouvé</string>
+    <string name="msg_module_loaded">%1$s va être chargé.</string>
+    <string name="msg_unload_module">Décharger le module %1$s?</string>
+    <string name="msg_redirecting_to">Redirection vers %1$s</string>
+    <string name="msg_failed_open_link"><string name="msg_failed_open_link">Echec de l'ouverture du lien avec l'éxecutable</string></string>
+    <string name="msg_invalid_link">Invalid link — only http/https URLs are allowed</string>
+    <string name="msg_failed_parse_kernel">Echec de l'analyse du kernel:</string>
+    <string name="msg_boot_extract_failed">L'extraction de l'image boot a échouée</string>
+    <string name="msg_failed_locate_boot"><string name="msg_failed_locate_boot">La localisation de l'image boot a échouée</string></string>
+    <string name="msg_failed_unpack_boot">Failed to unpack boot image</string>
+    <string name="msg_invalid_kpm_file">Fichier KPM incorrect</string>
+    <string name="msg_could_not_parse_kpm">Analyse des infos du KPM impossible</string>
+    <string name="msg_error_no_boot_image">Erreur: Aucune image boot trouvée.</string>
+    <string name="msg_please_select_file">Sélectionnez un fichier %1$s s'il vous plaît</string>
+    <string name="msg_please_wait">Veuillez patienter...</string>
+    <string name="msg_uploading">Envoi en cours... </string>
+    <string name="msg_upload_cancelled">Envoi annulé</string>
+    <string name="msg_error">Erreur: %1$s</string>
+    <string name="msg_successfully_loaded">%1$s a été chargé avec succès</string>
+    <string name="msg_failed_load_module">%1$s n'a pu être chargé</string>
+    <string name="msg_failed_get_module_info">Récupération des infos du module échouée</string>
+    <string name="msg_error_loading_apps">Erreur du chargement des applis: </string>
+    <string name="msg_error_rendering_apps">Erreur d'affichage des applis: </string>
+    <string name="msg_unknown">Inconnu</string>
+    <string name="title_kernel">Kernel</string>
+    <string name="title_logs">Logs</string>
+    <string name="title_backups">Backups</string>
+    <string name="title_repository">Repository</string>
+    <string name="title_repo_url">Repository URL</string>
+    <string name="title_binary_source">Binary Source</string>
+    <string name="title_select_source">Select Binary Source</string>
+    <string name="button_ok">OK</string>
+    <string name="button_save_to_storage">Save to storage</string>
+    <string name="button_delete">Delete</string>
+    <string name="label_flash_to_device">Flash to Device</string>
+    <string name="desc_patchnest">Standalone implementation, extended kernel support (3.18-6.12)</string>
+    <string name="desc_kernelpatch">Original project, active security updates</string>
+    <string name="msg_no_log">No log available</string>
+    <string name="msg_no_backups">No backups available</string>
+    <string name="msg_log_cleared">Log cleared</string>
+    <string name="msg_backup_saved">Backup saved to Download</string>
+    <string name="msg_backup_deleted"><string name="msg_backup_deleted">Backup deleted</string></string>
+    <string name="confirm_delete_backup">Delete backup "%1$s"?</string>
+    <string name="msg_source_switched">Source switched, reboot to apply</string>
+    <string name="msg_source_reboot">* Reboot required to apply</string>
+    <string name="msg_installing_kpm">Installing KPM package...</string>
+    <string name="msg_kpm_installed">KPM package installed successfully</string>
+    <string name="msg_no_modules_in_repo">No modules available in repository</string>
+    <string name="msg_repo_fetch_failed">Failed to fetch repository</string>
+    <string name="msg_no_download_url">No download URL available</string>
+    <string name="msg_repo_url_updated">Repository URL updated</string>
+    <string name="title_what_is_new">What's New</string>
+    <string name="button_close">Close</string>
+    <string name="button_view_full_changelog">View full changelog</string>
+    <!-- Theme picker -->
+    <string name="title_theme">Thème</string>
+    <string name="title_select_theme">Choisir le thème</string>
+    <string name="theme_auto">Suivre le système</string>
+    <string name="theme_light">Clair</string>
+    <string name="theme_dark">Sombre</string>
+    <!-- Safe mode indicator -->
+    <string name="title_safemode">Mode sans échec</string>
+    <string name="status_safemode_on">Actif — SU et KPMs bloqués</string>
+    <string name="status_safemode_off">Désactivé</string>
+    <string name="status_safemode_unknown">Inconnu (kp-safemode non installé)</string>
+    <!-- Patch step progress -->
+    <string name="title_progress">Progression</string>
+    <string name="patch_step_extract">Localiser et extraire l'image boot</string>
+    <string name="patch_step_validate">Valider les KPM intégrés</string>
+    <string name="patch_step_patch">Patcher le noyau</string>
+    <string name="patch_step_repack">Recompacter l'image boot</string>
+    <string name="patch_step_flash">Flasher sur l'appareil</string>
+    <string name="patch_step_unpatch">Annuler le patch du noyau</string>
+    <!-- Backup SHA256 -->
+    <string name="button_copy_hash">Copier SHA256</string>
+    <string name="msg_hash_copied">SHA256 copié</string>
+    <string name="msg_hash_copy_failed">Échec de la copie</string>
+    <!-- Boot/kernel metadata -->
+    <string name="info_security_patch">Correctif de sécurité : %1</string>
+    <string name="info_os_version">Version OS : %1</string>
+    <string name="info_size">Taille : %1</string>
+    <!-- KPM filter chips -->
+    <string name="filter_all">Tous</string>
+    <string name="filter_loaded">Chargés</string>
+    <string name="filter_with_event">Avec événement</string>
+    <!-- Exclude list import/export -->
+    <string name="button_export">Exporter</string>
+    <string name="button_import">Importer</string>
+    <string name="msg_export_empty">Aucune appli exclue à exporter</string>
+    <string name="msg_export_success">Exporté vers %1</string>
+    <string name="msg_export_failed">Échec de l'exportation</string>
+    <string name="msg_import_success">%1 applis importées</string>
+    <string name="msg_import_failed">Échec de l'importation : %1</string>
+    <!-- Update checker -->
+    <string name="title_update_available">Mise à jour disponible</string>
+    <string name="title_check_update">Vérifier les mises à jour</string>
+    <string name="update_new_version">Nouvelle version</string>
+    <string name="update_current">Actuellement installé : %1</string>
+    <string name="update_hint">Une nouvelle version de PatchNest est disponible. Appuyez sur Télécharger pour ouvrir la page de version dans votre navigateur.</string>
+    <string name="update_available">%1 disponible</string>
+    <string name="update_up_to_date">À jour</string>
+    <string name="update_download_started">Ouverture du téléchargement...</string>
+    <string name="update_download_failed">Impossible d'ouvrir le téléchargement</string>
+    <string name="update_no_url"><string name="update_no_url">Aucune URL de téléchargement dans update.json</string></string>
+    <string name="update_invalid_url">Invalid download URL — only http/https links are accepted</string>
+    <string name="button_later">Plus tard</string>
+    <string name="button_download">Télécharger</string>
+    <string name="status_checking">Vérification...</string>
+    <!-- Multi-repo manager -->
+    <string name="title_repo_manager">Gérer les dépôts</string>
+    <string name="button_add_repo">Ajouter un dépôt</string>
+    <string name="button_save">Enregistrer</string>
+    <string name="repo_official">Officiel</string>
+    <string name="repo_main">Principal</string>
+    <string name="repo_more">autres</string>
+    <string name="repo_placeholder_name">Nom d'affichage</string>
+    <!-- Backup purge -->
+    <string name="title_purge_backups">Purger les anciennes sauvegardes</string>
+    <string name="label_keep_count">Conserver les sauvegardes les plus récentes :</string>
+    <string name="button_purge">Purger</string>
+    <string name="button_purge_old">Purger les anciennes</string>
+    <string name="purge_none_to_delete">Rien à supprimer — votre nombre de rétention couvre toutes les sauvegardes actuelles.</string>
+    <string name="purge_will_delete">%1 ancienne(s) sauvegarde(s) seront supprimée(s).</string>
+    <string name="msg_purged">%1 ancienne(s) sauvegarde(s) purgée(s)</string>
+    <!-- Exclude profiles -->
+    <string name="title_profiles">Profils</string>
+    <string name="title_save_profile">Enregistrer le profil</string>
+    <string name="title_load_profile">Charger le profil</string>
+    <string name="label_profile_name">Nom du profil :</string>
+    <string name="label_select_profile">Sélectionnez un profil à appliquer :</string>
+    <string name="button_save_profile">Enregistrer l'actuel comme profil</string>
+    <string name="button_load_profile">Charger un profil</string>
+    <string name="profile_count">%1 applis</string>
+    <string name="msg_no_profiles">Aucun profil enregistré</string>
+    <string name="msg_profile_saved">Profil "%1" enregistré</string>
+    <string name="msg_profile_loaded">Profil "%1" appliqué</string>
+    <string name="info_root_manager">Gestionnaire root</string>
+    <string name="title_module_config">Configuration du module</string>
+    <string name="label_config_key">Clé de config</string>
+    <string name="label_config_value">Valeur de config</string>
+    <string name="button_save_config">Enregistrer config</string>
+    <string name="button_open_in_ksu">Ouvrir dans KSU Manager</string>
+    <string name="msg_module_disabled">Module désactivé dans le gestionnaire</string>
+    <string name="msg_no_config">Aucune entrée de config — saisissez "key=value" ci-dessous et appuyez sur Enregistrer</string>
+
+      <string name="title_stealth">Stealth</string>
+      <string name="title_stealth_center">Stealth Center</string>
+      <string name="subtitle_stealth_center">Toggle each KernelPatch module to hide root/hook signals from app scanners. Changes apply on next boot.</string>
+      <string name="msg_no_stealth_modules">No stealth modules installed. Install from the Repository tab.</string>
+      <string name="stealth_hint_reboot">Takes effect on next boot</string>
+      <string name="toast_stealth_enabled">%1$s enabled. Reboot to apply.</string>
+      <string name="toast_stealth_disabled">%1$s disabled. Reboot to apply.</string>
+      <string name="title_kpm_sig_policy">KPM signature check</string>
+      <string name="sig_policy_off">Off — load everything (no checks)</string>
+      <string name="sig_policy_warn">Warn — load everything, flag unsigned</string>
+      <string name="sig_policy_strict">Strict — reject unsigned</string>
+      <string name="sig_policy_off_short">Off</string>
+      <string name="sig_policy_warn_short">Warn</string>
+      <string name="sig_policy_strict_short">Strict</string>
+      <string name="title_unsigned_modules_warning">Unsigned KPM modules loaded</string>
+      <string name="unsigned_modules_count">%1$d module(s) loaded without a signature: %2$s. See /data/adb/patchnest/unsigned_modules.log</string>
+      <string name="toast_sig_policy_saved">Signature policy saved. Reboot to apply.</string>
+      <string name="update_verify_sha">Verify SHA-256 starts with: %1$s</string>
+      <string name="update_unsigned_warning">This update is NOT signed. Refusing to download for safety. Please install manually after verifying the release.</string>
+      <string name="tag_signed">Signed</string>
+      <string name="kpm_stat_state">State</string>
+      <string name="kpm_stat_size">Size</string>
+      <string name="kpm_stat_uptime">Uptime</string>
+      <string name="kpm_stat_last_event">Last event</string>
+      <string name="kpm_stat_filters">Filters</string>
+      <string name="kpm_stat_errors">Errors</string>
+      <string name="kpm_stat_build">Build</string>
+      <string name="kpm_stat_unsigned_warn">Warning: unsigned module loaded (warn policy)</string>
+      <string name="kpm_stat_just_now">just now</string>
+      <string name="kpm_state_loaded">Loaded</string>
+      <string name="kpm_state_failed">Failed</string>
+      <string name="kpm_state_pending">Pending</string>
+      <string name="kpm_state_unknown">Unknown</string>
+      <string name="kpm_hero_ok">System OK · %1$d loaded · %2$d failed</string>
+      <string name="kpm_hero_down">System DEGRADED · %1$d loaded · %2$d failed</string>
+      <string name="kpm_hero_empty">No KPM modules loaded</string>
+      <string name="kpm_dashboard_full_title">KPM dashboard</string>
+      <string name="kpm_dashboard_expand">View full dashboard</string>
+      <string name="kpm_update_badge">Update: %1$s</string>
+      <string name="kpm_update_available_tooltip">Installed: %1$s — newer version available: %2$s</string>
+      <string name="kpm_update_button_title">Install update from repository</string>
+      <string name="kpm_updates_available_toast">%1$d KPM update(s) available — open the KPM page to upgrade</string>
+      <string name="title_install_from_url">Install KPM from URL</string>
+      <string name="hint_install_from_url">Direct link to a .kpm or .zip file. SHA256-verified modules are preferred.</string>
+      <string name="title_auto_unpatch">Auto-Unpatch Recovery Plan</string>
+      <string name="button_continue">Continue</string>
+      <string name="yes">yes</string>
+      <string name="no">no</string>
+      <string name="auto_unpatch_summary">Your backup is: %1$s (%2$s)\nVerified: %3$s</string>
+      <string name="auto_unpatch_no_backup">No backup found. Auto-unpatch cannot run safely.</string>
+      <string name="auto_unpatch_no_backup_warn">Proceeding will leave the device in an unpatched state with no recovery path.</string>
+      <string name="auto_unpatch_unverified_warn">This backup was NOT verified by magiskboot — proceed at your own risk.</string>
+      <string name="auto_unpatch_lose">If auto_unpatch runs, you will LOSE:</string>
+      <string name="auto_unpatch_lose_kp_patches">Kp kernel patches (kimg -Y)</string>
+      <string name="auto_unpatch_lose_kpm_modules">All loaded KPM modules (stealth-*, selinux_hook, etc.)</string>
+      <string name="auto_unpatch_lose_nothing">No Kp-specific state recorded in the backup.</string>
+      <string name="auto_unpatch_keep">You will KEEP:</string>
+      <string name="auto_unpatch_keep_magisk">Magisk root (AK3, version %1$s)</string>
+      <string name="auto_unpatch_keep_ksu">KernelSU (version %1$s)</string>
+      <string name="auto_unpatch_keep_non_kp">All non-Kp modifications in the backup.</string>
+      <string name="auto_unpatch_keep_unknown">Unknown — manifest not found for this backup.</string>
+      <string name="msg_unpatch_done">Unpatch complete.</string>
+      <string name="msg_unpatch_failed">Unpatch failed: %1$s</string>
+      <string name="msg_cancelled">Cancelled.</string>
+</resources>

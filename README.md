@@ -1,89 +1,32 @@
-# PatchNest CLI
+# PatchNest
 
-PatchNest CLI is the standalone Android `kpatch` user-space client consumed by [`PatchNest-Module`](https://github.com/Zhanfg/PatchNest-Module).
+PatchNest is the canonical monorepo for the PatchNest userspace CLI, root module/WebUI, and KPM catalog/source workspace.
 
-## Source provenance
+## Components
 
-The current source snapshot is imported from:
+| Path | Component | Release cadence |
+|---|---|---|
+| `cli/` | Android `kpatch` userspace CLI | Independent |
+| `module/` | Magisk / KernelSU / KernelSU-Next / APatch module and WebUI | Independent |
+| `kpms/` | KPM catalog, source prototypes, and validation | Independent |
+| `docs/` | Monorepo provenance, migration, and release documentation | Repository-wide |
 
-- Upstream repository: `KernelSU-Next/KPatch-Next`
-- Upstream commit: `0fe6d142266b80e5aa445a7ea1534f88a8f33a35`
-- Upstream directory: `user/`
-- Version: `0.13.5-2`
+`Zhanfg/KernelPatch-Public` remains an independent lower-level dependency. It is intentionally not vendored into this repository.
 
-`SOURCE_IMPORT_MANIFEST.json` is the machine-readable source record. CI checks the local and pinned upstream `.c`/`.h` file lists in both directions, compares every imported file, and verifies the generated or referenced build inputs:
+## History and migration
 
-- `banner`
-- `src/uapi/scdefs.h`
-- `version`
-- `revision`
-- `LICENSE`
+The CLI history is the original history of this repository, relocated under `cli/`.
 
-## Legacy release history
+`PatchNest-Module` and `PatchNest-Kpms` are imported with non-squashed Git subtree merges so their source main histories remain reachable from this repository. Exact source refs are recorded under `docs/provenance/`.
 
-The historical tag `0.13.5-2` points to commit:
+Historical releases in the source repositories remain immutable. Public update URLs are migrated only when an equivalent canonical release or raw path exists; compatibility must not be broken merely to complete the repository consolidation.
 
-```text
-d8152d4afdafa7f4f58e25223d2ca8e1e9b131cd
-```
+## Licensing
 
-That commit predates the source restoration and contains only the initial repository shell. The `kpatch-android` asset attached to the release is retained as an immutable legacy artifact; the tag must not be presented as a source-bearing release.
+This monorepo contains components under different licenses. Do not treat the repository as having one blanket license.
 
-The complete CLI source was restored later in commit:
+See [`docs/licensing.md`](docs/licensing.md) and the component-local license files.
 
-```text
-c04610d663b3257216fc91221754494e4193aa1f
-```
+## Development
 
-Despite the historical tag defect, CI reproduces the existing release asset byte-for-byte from the pinned upstream snapshot. Its SHA-256 is:
-
-```text
-d6a654816f11c8d297ca59aaace9c61537238f26191738c14610d2dcf39bf3b0
-```
-
-Future releases must use a new tag that points to a commit containing the complete corresponding source. The legacy tag and asset are never overwritten.
-
-## Build
-
-Requirements:
-
-- CMake 3.10 or later
-- Ninja
-- Android NDK r26b
-
-```bash
-cmake -S . -B build/android \
-  -G Ninja \
-  -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK/build/cmake/android.toolchain.cmake" \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DANDROID_PLATFORM=android-33 \
-  -DANDROID_ABI=arm64-v8a
-
-cmake --build build/android --target kpatch --parallel
-cp build/android/kpatch out/kpatch-android
-```
-
-CI performs the following checks:
-
-1. the legacy tag still points to its recorded commit;
-2. the source snapshot matches the pinned upstream commit in both directions;
-3. strict format, declaration, pointer-type, and return-type warning gates pass;
-4. two independent build directories produce byte-identical binaries;
-5. the output is an Android ARM64 PIE using `/system/bin/linker64`;
-6. the output matches the immutable `0.13.5-2` release asset byte-for-byte;
-7. a machine-readable `build-provenance.json` is uploaded with the verification artifact.
-
-## Repository responsibility
-
-This repository contains only the user-space CLI. It does not contain:
-
-- KernelPatch core or `kpimg`
-- `kptools`
-- PatchNest module installer or WebUI
-- KPM catalog sources
-
-Those components remain in their dedicated repositories.
-
-## License
-
-GPL-2.0. See [`LICENSE`](LICENSE) and the retained upstream copyright notices.
+Changes should stay within the component boundary they affect. CI is path-aware so CLI, Module/WebUI, and KPM validation can evolve independently while sharing one canonical repository.

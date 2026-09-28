@@ -1,0 +1,8 @@
+{
+  "versionCode": 26,
+  "version": "0.4.1-rc2",
+  "zipUrl": "https://github.com/Zhanfg/PatchNest-Module/releases/download/v0.4.1-rc2/PatchNest-Module.zip",
+  "changelog": "https://raw.githubusercontent.com/Zhanfg/PatchNest/main/module/CHANGELOG.md",
+  "zipSha256": "5b7b9ce62ad2e4f66b9bf8d2692cc6f4362f22015d46a7ad9b8845e67d734fe8",
+  "_integrityNote": "zipSha256 is the SHA256 of the exact release asset referenced by zipUrl. This historical asset remains in the standalone PatchNest-Module release. New canonical module releases use module-v<version> tags after an equivalent artifact is published."
+}

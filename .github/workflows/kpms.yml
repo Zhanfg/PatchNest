@@ -1,0 +1,44 @@
+name: KPM CI
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'kpms/**'
+      - '.github/workflows/kpms.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'kpms/**'
+      - '.github/workflows/kpms.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: kpms
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Validate catalog and draft inventory
+        run: node scripts/validate.js
+      - name: Reject Linux-module APIs in installable KPM sources
+        run: |
+          set -euo pipefail
+          installable=$(node -e "for (const m of require('./kpm_repo.json').modules) console.log(m.source || '')")
+          while IFS= read -r source; do
+            [ -z "$source" ] && continue
+            if grep -Eq 'module_init\(|module_exit\(|MODULE_LICENSE\(' "$source"; then
+              echo "::error file=$source::Installable entries must use KernelPatch KPM interfaces"
+              exit 1
+            fi
+            grep -q 'KPM_NAME(' "$source"
+            grep -q 'KPM_INIT(' "$source"
+          done <<< "$installable"

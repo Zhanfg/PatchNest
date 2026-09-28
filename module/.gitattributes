@@ -1,0 +1,7 @@
+** text eol=lf
+
+/module/bin/** binary
+*.png binary
+*.kpm binary
+*.ko binary
+*.so binary

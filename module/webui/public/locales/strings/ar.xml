@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- UI Labels -->
+    <string name="title_patch">باتش</string>
+    <string name="title_unpatch">إلغاء الباتش</string>
+    <string name="title_kpmodule">KPModule</string>
+    <string name="title_exclude">استثناء</string>
+    <string name="title_settings">الإعدادات</string>
+    <string name="title_home">الرئيسية</string>
+    <string name="title_language">اللغة</string>
+    <string name="title_control_kpmodule">التحكم ب KPModule</string>
+    <string name="title_select_language">اختر اللغة</string>
+    <string name="title_reboot">إعادة التشغيل</string>
+    <string name="title_reboot_recovery">إعادة التشغيل لوضع الريكفري</string>
+    <string name="title_reboot_bootloader">إعادة التشغيل لوضع Bootloader</string>
+    <string name="title_reboot_download">إعادة التشغيل لوضع التحميل</string>
+    <string name="title_reboot_edl">إعادة التشغيل لوضع EDL</string>
+    <string name="title_kernel">النواة</string>
+    <!-- Buttons -->
+    <string name="button_install">انقر للتثبيت</string>
+    <string name="button_uninstall">إلغاء التثبيت</string>
+    <string name="button_embed_kpm">تضمين KPM</string>
+    <string name="button_start">ابدأ</string>
+    <string name="button_unpatch">إلغاء الباتش</string>
+    <string name="button_cancel">إلغاء</string>
+    <string name="button_ok">موافق</string>
+    <string name="button_load">تحميل</string>
+    <string name="button_unload">إلغاء التحميل</string>
+    <string name="button_refresh">إعادة تحميل</string>
+    <!-- التسميات -->
+    <string name="label_input_control_parameters">معلمات التحكم في الإدخال:</string>
+    <string name="label_parameters">المعلمات</string>
+    <string name="label_load_temporarily">تحميل مؤقت</string>
+    <string name="label_show_system_app">إظهار تطبيق النظام</string>
+    <string name="label_system_default">افتراضي النظام</string>
+    <string name="label_trigger_event">تشغيل الحدث</string>
+    <!-- الحالة -->
+    <string name="status_not_installed">غير مثبت</string>
+    <string name="status_working">يعمل 😋</string>
+    <string name="status_loading">جاري التحميل...</string>
+    <!-- معلومات -->
+    <string name="info_kernel_version">إصدار النواة</string>
+    <string name="info_system_version">إصدار النظام</string>
+    <string name="info_fingerprint">البصمة</string>
+    <string name="info_selinux_status">حالة SELinux</string>
+    <string name="info_version">الإصدار: %1$s</string>
+    <string name="info_time">الوقت: %1$s</string>
+    <string name="info_config">التكوين: %1$s</string>
+    <string name="info_slot">الفتحة: %1$s</string>
+    <string name="info_device">الجهاز: %1$s</string>
+    <string name="info_device_unknown">الجهاز: غير معروف</string>
+    <string name="info_author">المطور: %1$s</string>
+    <string name="info_args">Args: %1$s</string>
+    <string name="info_no_description">لا يوجد وصف</string>
+    <string name="info_embedded">مضمن</string>
+    <string name="info_user">المستخدم %1$s</string>
+    <string name="info_system">النظام</string>
+    <!-- الرسائل -->
+    <string name="msg_no_module_loaded">لم يتم تحميل أي إضافة</string>
+    <string name="msg_no_app_found">لم يتم العثور على أي تطبيق</string>
+    <string name="msg_no_module_found">لم يتم العثور على أي إضافة</string>
+    <string name="msg_module_loaded">سيتم تحميل %1$s.</string>
+    <string name="msg_unload_module">هل تريد إلغاء تحميل إضافة %1$s؟</string>
+    <string name="msg_redirecting_to">إعادة التوجيه إلى %1$s</string>
+    <string name="msg_failed_open_link"><string name="msg_failed_open_link">فشل فتح الرابط بواسطة exec</string></string>
+    <string name="msg_invalid_link">Invalid link — only http/https URLs are allowed</string>
+    <string name="msg_failed_parse_kernel">فشل تحليل النواة:</string>
+    <string name="msg_boot_extract_failed">فشل استخراج boot image</string>
+    <string name="msg_failed_locate_boot"><string name="msg_failed_locate_boot">فشل تحديد موقع Boot image</string></string>
+    <string name="msg_failed_unpack_boot">Failed to unpack boot image</string>
+    <string name="msg_invalid_kpm_file">ملف KPM غير صالح</string>
+    <string name="msg_could_not_parse_kpm">تعذر تحليل معلومات KPM</string>
+    <string name="msg_error_no_boot_image">خطأ: لم يتم العثور على Boot image.</string>
+    <string name="msg_please_select_file">يرجى تحديد ملف %1$s</string>
+    <string name="msg_please_wait">يرجى الانتظار...</string>
+    <string name="msg_uploading">جاري التحميل... </string>
+    <string name="msg_upload_cancelled">تم إلغاء التحميل</string>
+    <string name="msg_error">خطأ: %1$s</string>
+    <string name="msg_successfully_loaded">تم تحميل %1$s بنجاح</string>
+    <string name="msg_failed_load_module">فشل تحميل الإضافة %1$s</string>
+    <string name="msg_failed_get_module_info">فشل الحصول على معلومات الإضافة</string>
+    <string name="msg_error_loading_apps">خطأ في تحميل التطبيقات: </string>
+    <string name="msg_error_rendering_apps">حدث خطأ في عرض التطبيقات: </string>
+    <string name="msg_unknown">غير معروف</string>
+    <string name="title_rehook_syscall">Rehook Syscall</string>
+    <string name="title_logs">Logs</string>
+    <string name="title_backups">Backups</string>
+    <string name="title_repository">Repository</string>
+    <string name="title_repo_url">Repository URL</string>
+    <string name="title_binary_source">Binary Source</string>
+    <string name="title_select_source">Select Binary Source</string>
+    <string name="button_save_to_storage">Save to storage</string>
+    <string name="button_delete">Delete</string>
+    <string name="label_flash_to_device">Flash to Device</string>
+    <string name="desc_patchnest">Standalone implementation, extended kernel support (3.18-6.12)</string>
+    <string name="desc_kernelpatch">Original project, active security updates</string>
+    <string name="msg_no_log">No log available</string>
+    <string name="msg_no_backups">No backups available</string>
+    <string name="msg_log_cleared">Log cleared</string>
+    <string name="msg_backup_saved">Backup saved to Download</string>
+    <string name="msg_backup_deleted"><string name="msg_backup_deleted">Backup deleted</string></string>
+    <string name="confirm_delete_backup">Delete backup "%1$s"?</string>
+    <string name="msg_source_switched">Source switched, reboot to apply</string>
+    <string name="msg_source_reboot">* Reboot required to apply</string>
+    <string name="msg_installing_kpm">Installing KPM package...</string>
+    <string name="msg_kpm_installed">KPM package installed successfully</string>
+    <string name="msg_no_modules_in_repo">No modules available in repository</string>
+    <string name="msg_repo_fetch_failed">Failed to fetch repository</string>
+    <string name="msg_no_download_url">No download URL available</string>
+    <string name="msg_repo_url_updated">Repository URL updated</string>
+    <string name="title_what_is_new">What's New</string>
+    <string name="button_close">Close</string>
+    <string name="button_view_full_changelog">View full changelog</string>
+    <!-- Theme picker -->
+    <string name="title_theme">السمة</string>
+    <string name="title_select_theme">اختر السمة</string>
+    <string name="theme_auto">اتبع النظام</string>
+    <string name="theme_light">فاتح</string>
+    <string name="theme_dark">داكن</string>
+    <!-- Safe mode indicator -->
+    <string name="title_safemode">الوضع الآمن</string>
+    <string name="status_safemode_on">مفعّل — SU و KPMs محظورة</string>
+    <string name="status_safemode_off">معطل</string>
+    <string name="status_safemode_unknown">غير معروف (kp-safemode غير مثبت)</string>
+    <!-- Patch step progress -->
+    <string name="title_progress">التقدم</string>
+    <string name="patch_step_extract">تحديد موقع صورة boot واستخراجها</string>
+    <string name="patch_step_validate">التحقق من وحدات KPM المضمنة</string>
+    <string name="patch_step_patch">ترقيع النواة</string>
+    <string name="patch_step_repack">إعادة حزم صورة boot</string>
+    <string name="patch_step_flash">الوميض إلى الجهاز</string>
+    <string name="patch_step_unpatch">إلغاء ترقيع النواة</string>
+    <!-- Backup SHA256 -->
+    <string name="button_copy_hash">نسخ SHA256</string>
+    <string name="msg_hash_copied">SHA256 تم نسخه</string>
+    <string name="msg_hash_copy_failed">فشل النسخ</string>
+    <!-- Boot/kernel metadata -->
+    <string name="info_security_patch">تصحيح أمان: %1</string>
+    <string name="info_os_version">إصدار نظام التشغيل: %1</string>
+    <string name="info_size">الحجم: %1</string>
+    <!-- KPM filter chips -->
+    <string name="filter_all">الكل</string>
+    <string name="filter_loaded">محملة</string>
+    <string name="filter_with_event">مع حدث</string>
+    <!-- Exclude list import/export -->
+    <string name="button_export">تصدير</string>
+    <string name="button_import">استيراد</string>
+    <string name="msg_export_empty">لا توجد تطبيقات مستبعدة للتصدير</string>
+    <string name="msg_export_success">تم التصدير إلى %1</string>
+    <string name="msg_export_failed">فشل التصدير</string>
+    <string name="msg_import_success">تم استيراد %1 تطبيقات</string>
+    <string name="msg_import_failed">فشل الاستيراد: %1</string>
+    <!-- Update checker -->
+    <string name="title_update_available">تحديث متاح</string>
+    <string name="title_check_update">تحقق من التحديثات</string>
+    <string name="update_new_version">الإصدار الجديد</string>
+    <string name="update_current">المثبت حاليًا: %1</string>
+    <string name="update_hint">إصدار جديد من PatchNest متاح. اضغط تنزيل لفتح صفحة الإصدار في متصفحك.</string>
+    <string name="update_available">%1 متاح</string>
+    <string name="update_up_to_date">محدّث</string>
+    <string name="update_download_started">جارٍ فتح التنزيل...</string>
+    <string name="update_download_failed">تعذر فتح التنزيل</string>
+    <string name="update_no_url"><string name="update_no_url">لا يوجد رابط تنزيل في update.json</string></string>
+    <string name="update_invalid_url">Invalid download URL — only http/https links are accepted</string>
+    <string name="button_later">لاحقًا</string>
+    <string name="button_download">تنزيل</string>
+    <string name="status_checking">جارٍ التحقق...</string>
+    <!-- Multi-repo manager -->
+    <string name="title_repo_manager">إدارة المستودعات</string>
+    <string name="button_add_repo">إضافة مستودع</string>
+    <string name="button_save">حفظ</string>
+    <string name="repo_official">رسمي</string>
+    <string name="repo_main">رئيسي</string>
+    <string name="repo_more">المزيد</string>
+    <string name="repo_placeholder_name">اسم العرض</string>
+    <!-- Backup purge -->
+    <string name="title_purge_backups">حذف النسخ الاحتياطية القديمة</string>
+    <string name="label_keep_count">الاحتفاظ بآخر نسخ احتياطية:</string>
+    <string name="button_purge">حذف</string>
+    <string name="button_purge_old">حذف النسخ القديمة</string>
+    <string name="purge_none_to_delete">لا شيء للحذف — عدد الاحتفاظ يغطي جميع النسخ الحالية.</string>
+    <string name="purge_will_delete">سيتم حذف %1 نسخة(نسخ) احتياطية أقدم.</string>
+    <string name="msg_purged">تم حذف %1 نسخة(نسخ) احتياطية قديمة</string>
+    <!-- Exclude profiles -->
+    <string name="title_profiles">الملفات الشخصية</string>
+    <string name="title_save_profile">حفظ ملف</string>
+    <string name="title_load_profile">تحميل ملف</string>
+    <string name="label_profile_name">اسم الملف الشخصي:</string>
+    <string name="label_select_profile">اختر ملفًا شخصيًا للتطبيق:</string>
+    <string name="button_save_profile">حفظ الحالي كملف شخصي</string>
+    <string name="button_load_profile">تحميل ملف شخصي</string>
+    <string name="profile_count">%1 تطبيقات</string>
+    <string name="msg_no_profiles">لا توجد ملفات شخصية محفوظة</string>
+    <string name="msg_profile_saved">تم حفظ الملف الشخصي "%1"</string>
+    <string name="msg_profile_loaded">تم تطبيق الملف الشخصي "%1"</string>
+    <string name="info_root_manager">مدير الجذر</string>
+    <string name="title_module_config">تهيئة الوحدة</string>
+    <string name="label_config_key">مفتاح التهيئة</string>
+    <string name="label_config_value">قيمة التهيئة</string>
+    <string name="button_save_config">حفظ التهيئة</string>
+    <string name="button_open_in_ksu">افتح في مدير KSU</string>
+    <string name="msg_module_disabled">الوحدة معطلة في المدير</string>
+    <string name="msg_no_config">لا توجد إدخالات تهيئة حتى الآن — اكتب "key=value" أدناه واضغط حفظ</string>
+
+      <string name="title_stealth">Stealth</string>
+      <string name="title_stealth_center">Stealth Center</string>
+      <string name="subtitle_stealth_center">Toggle each KernelPatch module to hide root/hook signals from app scanners. Changes apply on next boot.</string>
+      <string name="msg_no_stealth_modules">No stealth modules installed. Install from the Repository tab.</string>
+      <string name="stealth_hint_reboot">Takes effect on next boot</string>
+      <string name="toast_stealth_enabled">%1$s enabled. Reboot to apply.</string>
+      <string name="toast_stealth_disabled">%1$s disabled. Reboot to apply.</string>
+      <string name="title_kpm_sig_policy">KPM signature check</string>
+      <string name="sig_policy_off">Off — load everything (no checks)</string>
+      <string name="sig_policy_warn">Warn — load everything, flag unsigned</string>
+      <string name="sig_policy_strict">Strict — reject unsigned</string>
+      <string name="sig_policy_off_short">Off</string>
+      <string name="sig_policy_warn_short">Warn</string>
+      <string name="sig_policy_strict_short">Strict</string>
+      <string name="title_unsigned_modules_warning">Unsigned KPM modules loaded</string>
+      <string name="unsigned_modules_count">%1$d module(s) loaded without a signature: %2$s. See /data/adb/patchnest/unsigned_modules.log</string>
+      <string name="toast_sig_policy_saved">Signature policy saved. Reboot to apply.</string>
+      <string name="update_verify_sha">Verify SHA-256 starts with: %1$s</string>
+      <string name="update_unsigned_warning">This update is NOT signed. Refusing to download for safety. Please install manually after verifying the release.</string>
+      <string name="tag_signed">Signed</string>
+      <string name="kpm_stat_state">State</string>
+      <string name="kpm_stat_size">Size</string>
+      <string name="kpm_stat_uptime">Uptime</string>
+      <string name="kpm_stat_last_event">Last event</string>
+      <string name="kpm_stat_filters">Filters</string>
+      <string name="kpm_stat_errors">Errors</string>
+      <string name="kpm_stat_build">Build</string>
+      <string name="kpm_stat_unsigned_warn">Warning: unsigned module loaded (warn policy)</string>
+      <string name="kpm_stat_just_now">just now</string>
+      <string name="kpm_state_loaded">Loaded</string>
+      <string name="kpm_state_failed">Failed</string>
+      <string name="kpm_state_pending">Pending</string>
+      <string name="kpm_state_unknown">Unknown</string>
+      <string name="kpm_hero_ok">System OK · %1$d loaded · %2$d failed</string>
+      <string name="kpm_hero_down">System DEGRADED · %1$d loaded · %2$d failed</string>
+      <string name="kpm_hero_empty">No KPM modules loaded</string>
+      <string name="kpm_dashboard_full_title">KPM dashboard</string>
+      <string name="kpm_dashboard_expand">View full dashboard</string>
+      <string name="kpm_update_badge">Update: %1$s</string>
+      <string name="kpm_update_available_tooltip">Installed: %1$s — newer version available: %2$s</string>
+      <string name="kpm_update_button_title">Install update from repository</string>
+      <string name="kpm_updates_available_toast">%1$d KPM update(s) available — open the KPM page to upgrade</string>
+      <string name="title_install_from_url">Install KPM from URL</string>
+      <string name="hint_install_from_url">Direct link to a .kpm or .zip file. SHA256-verified modules are preferred.</string>
+      <string name="title_auto_unpatch">Auto-Unpatch Recovery Plan</string>
+      <string name="button_continue">Continue</string>
+      <string name="yes">yes</string>
+      <string name="no">no</string>
+      <string name="auto_unpatch_summary">Your backup is: %1$s (%2$s)\nVerified: %3$s</string>
+      <string name="auto_unpatch_no_backup">No backup found. Auto-unpatch cannot run safely.</string>
+      <string name="auto_unpatch_no_backup_warn">Proceeding will leave the device in an unpatched state with no recovery path.</string>
+      <string name="auto_unpatch_unverified_warn">This backup was NOT verified by magiskboot — proceed at your own risk.</string>
+      <string name="auto_unpatch_lose">If auto_unpatch runs, you will LOSE:</string>
+      <string name="auto_unpatch_lose_kp_patches">Kp kernel patches (kimg -Y)</string>
+      <string name="auto_unpatch_lose_kpm_modules">All loaded KPM modules (stealth-*, selinux_hook, etc.)</string>
+      <string name="auto_unpatch_lose_nothing">No Kp-specific state recorded in the backup.</string>
+      <string name="auto_unpatch_keep">You will KEEP:</string>
+      <string name="auto_unpatch_keep_magisk">Magisk root (AK3, version %1$s)</string>
+      <string name="auto_unpatch_keep_ksu">KernelSU (version %1$s)</string>
+      <string name="auto_unpatch_keep_non_kp">All non-Kp modifications in the backup.</string>
+      <string name="auto_unpatch_keep_unknown">Unknown — manifest not found for this backup.</string>
+      <string name="msg_unpatch_done">Unpatch complete.</string>
+      <string name="msg_unpatch_failed">Unpatch failed: %1$s</string>
+      <string name="msg_cancelled">Cancelled.</string>
+</resources>

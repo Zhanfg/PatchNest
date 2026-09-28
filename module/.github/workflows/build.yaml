@@ -1,0 +1,337 @@
+name: Build
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    branches: [main]
+    paths-ignore: ['**.md']
+  push:
+    branches: [main]
+    paths-ignore: ['**.md']
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Source and WebUI validation
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.28.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: webui/pnpm-lock.yaml
+
+      - name: Install validation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck jq
+
+      - name: Verify release metadata
+        run: |
+          set -euo pipefail
+          prop_version=$(sed -n 's/^version=//p' module/module.prop)
+          json_version=$(jq -r '.version' update.json)
+          prop_code=$(sed -n 's/^versionCode=//p' module/module.prop)
+          json_code=$(jq -r '.versionCode' update.json)
+          zip_url=$(jq -r '.zipUrl' update.json)
+          zip_sha=$(jq -r '.zipSha256' update.json)
+
+          test "$prop_version" = "$json_version" || {
+            echo "::error::Version mismatch: module.prop=$prop_version update.json=$json_version"
+            exit 1
+          }
+          test "$prop_code" = "$json_code" || {
+            echo "::error::VersionCode mismatch: module.prop=$prop_code update.json=$json_code"
+            exit 1
+          }
+          case "$json_version" in
+            v*) echo "::error::Internal version must not include v prefix"; exit 1 ;;
+          esac
+          case "$zip_url" in
+            */releases/download/v"$json_version"/*) ;;
+            *) echo "::error::zipUrl must target tag v$json_version"; exit 1 ;;
+          esac
+          printf '%s' "$zip_sha" | grep -Eq '^[0-9a-f]{64}$' || {
+            echo "::error::zipSha256 must contain 64 lowercase hexadecimal characters"
+            exit 1
+          }
+
+          for key in patchnest kernelpatch magiskboot; do
+            grep -Fq "${key}=" version.properties || {
+              echo "::error::Missing version key: $key"
+              exit 1
+            }
+          done
+          for key in \
+            kpimg_linux_0.13.3 \
+            kptools_android_0.13.3 \
+            kpatch_android_0.13.5-2 \
+            magisk_apk_v30.7; do
+            value=$(grep -F "${key}=" version.properties | head -n 1 | cut -d= -f2-)
+            printf '%s' "$value" | grep -Eq '^[0-9a-f]{64}$' || {
+              echo "::error::Missing or invalid SHA256 pin: $key"
+              exit 1
+            }
+          done
+
+      - name: Check shell syntax
+        run: |
+          set -euo pipefail
+          for file in build.sh module/*.sh module/patch/*.sh; do
+            bash -n "$file"
+          done
+
+      - name: ShellCheck
+        run: |
+          shellcheck -s bash -S error build.sh
+          shellcheck -s sh -S warning \
+            --exclude=SC3043,SC2034,SC2115,SC2046,SC2319,SC2155 \
+            module/service.sh module/customize.sh module/post-fs-data.sh \
+            module/action.sh module/status.sh module/uninstall.sh \
+            module/install_kpm.sh module/compile_kpm.sh \
+            module/patch/boot_patch.sh module/patch/boot_extract.sh \
+            module/patch/boot_unpatch.sh
+          shellcheck -s sh -S error module/patch/util_functions.sh || true
+
+      - name: Verify locale completeness
+        run: |
+          set -euo pipefail
+          extract_keys() { grep -oP 'name="\K[^"]+' "$1" | sort; }
+          extract_keys webui/public/locales/strings/en.xml > /tmp/base-keys
+          fail=0
+          for file in webui/public/locales/strings/*.xml; do
+            [ "$(basename "$file")" = en.xml ] && continue
+            extract_keys "$file" > /tmp/lang-keys
+            missing=$(comm -23 /tmp/base-keys /tmp/lang-keys)
+            if [ -n "$missing" ]; then
+              echo "::error file=$file::Missing locale keys: $missing"
+              fail=1
+            fi
+          done
+          exit "$fail"
+
+      - name: Install WebUI dependencies
+        run: pnpm --dir webui install --frozen-lockfile
+
+      - name: Test WebUI
+        run: pnpm --dir webui test
+
+      - name: Build WebUI
+        run: pnpm --dir webui build
+
+      - name: Validate checked-in KPM fixtures
+        run: node tests/validate_kpm.js
+
+  build:
+    name: Verified ARM64 package
+    runs-on: ubuntu-24.04
+    needs: validate
+    outputs:
+      release_tag: ${{ steps.release_meta.outputs.tag }}
+      should_release: ${{ steps.release_meta.outputs.should_release }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@ed92fe6cadad69be94a966a7ee3271275e62f779
+        with:
+          ndk-version: r26d
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.28.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: webui/pnpm-lock.yaml
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq zip unzip file
+
+      - name: Load dependency versions
+        run: |
+          set -euo pipefail
+          for key in patchnest kernelpatch magiskboot; do
+            value=$(grep -F "${key}=" version.properties | head -n 1 | cut -d= -f2- | tr -d '"')
+            [ -n "$value" ] || { echo "::error::Missing $key"; exit 1; }
+            echo "$key=$value" >> "$GITHUB_ENV"
+          done
+
+      - name: Download pinned binary dependencies
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p module/bin
+          gh release download "$kernelpatch" \
+            -R Zhanfg/KernelPatch-Public \
+            -p kpimg-linux -p kptools-android -D module/bin
+          gh release download "$patchnest" \
+            -R Zhanfg/PatchNest \
+            -p kpatch-android -D module/bin
+          gh release download "$magiskboot" \
+            -R topjohnwu/Magisk \
+            -p 'Magisk*.apk' -O magisk.apk
+
+      - name: Verify dependency SHA256
+        run: |
+          set -uo pipefail
+          fail=0
+          get_pin() {
+            grep -F "$1=" version.properties | head -n 1 | cut -d= -f2- | tr -d '"'
+          }
+          verify() {
+            key="$1"
+            file="$2"
+            expected=$(get_pin "$key")
+            actual=$(sha256sum "$file" | awk '{print $1}')
+            echo "::notice title=$key SHA256::$actual"
+            if [ "$actual" != "$expected" ]; then
+              echo "::error::$key mismatch: expected=$expected actual=$actual"
+              fail=1
+            fi
+          }
+          verify "kpimg_linux_${kernelpatch}" module/bin/kpimg-linux
+          verify "kptools_android_${kernelpatch}" module/bin/kptools-android
+          verify "kpatch_android_${patchnest}" module/bin/kpatch-android
+          verify "magisk_apk_${magiskboot}" magisk.apk
+          exit "$fail"
+
+      - name: Prepare module binaries
+        run: |
+          set -euo pipefail
+          mv module/bin/kpimg-linux module/bin/kpimg
+          mv module/bin/kptools-android module/bin/kptools
+          mv module/bin/kpatch-android module/bin/kpatch
+          unzip -p magisk.apk 'lib/arm64-v8a/libmagiskboot.so' > module/bin/magiskboot
+          test -s module/bin/magiskboot
+          rm magisk.apk
+          chmod 0755 module/bin/kpatch module/bin/kptools module/bin/magiskboot
+
+      - name: Build kp-safemode
+        run: |
+          set -euo pipefail
+          clang="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang"
+          test -x "$clang"
+          "$clang" -static -O2 -Wall -Wextra \
+            -o module/bin/kp-safemode module/tools/kp-safemode.c
+          chmod 0755 module/bin/kp-safemode
+
+      - name: Verify ARM64 binaries
+        run: |
+          set -euo pipefail
+          for binary in module/bin/kpatch module/bin/kptools module/bin/kp-safemode; do
+            description=$(file "$binary")
+            echo "$description"
+            printf '%s' "$description" | grep -q 'ELF 64-bit.*ARM aarch64' || {
+              echo "::error::$binary is not an ARM64 ELF"
+              exit 1
+            }
+          done
+          test -s module/bin/kpimg
+          test -s module/bin/magiskboot
+
+      - name: Build WebUI
+        run: |
+          pnpm --dir webui install --frozen-lockfile
+          pnpm --dir webui build
+
+      - name: Validate complete module
+        run: node tests/validate_module.js
+
+      - name: Package module
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          (cd module && zip -qr ../out/PatchNest-Module.zip .)
+          test -s out/PatchNest-Module.zip
+          sha256sum out/PatchNest-Module.zip > out/PatchNest-Module.zip.sha256
+          unzip -l out/PatchNest-Module.zip | grep -q 'module.prop'
+          unzip -l out/PatchNest-Module.zip | grep -q 'webroot/index.html'
+
+      - name: Determine release tag
+        id: release_meta
+        run: |
+          set -euo pipefail
+          version=$(jq -r '.version' update.json)
+          tag="v$version"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          git fetch --tags --force
+          if [ "${{ github.event_name }}" = push ] \
+             && [ "${{ github.ref }}" = refs/heads/main ] \
+             && ! git rev-parse "$tag" >/dev/null 2>&1; then
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload verified package
+        uses: actions/upload-artifact@v6
+        with:
+          name: patchnest-module-${{ github.sha }}
+          path: |
+            out/PatchNest-Module.zip
+            out/PatchNest-Module.zip.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Publish release
+    runs-on: ubuntu-24.04
+    needs: build
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      needs.build.outputs.should_release == 'true'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Download verified package
+        uses: actions/download-artifact@v7
+        with:
+          name: patchnest-module-${{ github.sha }}
+          path: out
+
+      - name: Verify release manifest
+        run: |
+          set -euo pipefail
+          actual=$(sha256sum out/PatchNest-Module.zip | awk '{print $1}')
+          expected=$(jq -r '.zipSha256' update.json)
+          test "$actual" = "$expected" || {
+            echo "::error::Package SHA256 $actual does not match update.json $expected"
+            exit 1
+          }
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65
+        with:
+          tag_name: ${{ needs.build.outputs.release_tag }}
+          name: PatchNest ${{ needs.build.outputs.release_tag }}
+          prerelease: ${{ contains(needs.build.outputs.release_tag, '-') }}
+          generate_release_notes: true
+          files: |
+            out/PatchNest-Module.zip
+            out/PatchNest-Module.zip.sha256

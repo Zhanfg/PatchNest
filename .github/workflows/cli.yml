@@ -1,0 +1,172 @@
+name: CLI CI
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'cli/**'
+      - '.github/workflows/cli.yml'
+  push:
+    branches:
+      - main
+      - 'fix/**'
+    paths:
+      - 'cli/**'
+      - '.github/workflows/cli.yml'
+  workflow_dispatch:
+
+env:
+  UPSTREAM_REPOSITORY: KernelSU-Next/KPatch-Next
+  UPSTREAM_COMMIT: 0fe6d142266b80e5aa445a7ea1534f88a8f33a35
+  RELEASE_VERSION: 0.13.5-2
+  RELEASE_TAG_COMMIT: d8152d4afdafa7f4f58e25223d2ca8e1e9b131cd
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: cli
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          fetch-depth: 0
+
+      - name: Setup Android NDK
+        id: ndk
+        uses: nttld/setup-ndk@ed92fe6cadad69be94a966a7ee3271275e62f779
+        with:
+          ndk-version: r26b
+
+      - name: Verify legacy tag and source manifests
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+          test "$(git rev-list -n 1 "$RELEASE_VERSION")" = "$RELEASE_TAG_COMMIT"
+          test "$(jq -r '.upstreamRepository' SOURCE_IMPORT_MANIFEST.json)" = "$UPSTREAM_REPOSITORY"
+          test "$(jq -r '.upstreamCommit' SOURCE_IMPORT_MANIFEST.json)" = "$UPSTREAM_COMMIT"
+          test "$(jq -r '.upstreamDirectory' SOURCE_IMPORT_MANIFEST.json)" = user
+          test "$(jq -r '.version' SOURCE_IMPORT_MANIFEST.json)" = "$RELEASE_VERSION"
+          test "$(jq -r '.upstreamRepository' SOURCE_DIVERGENCE_MANIFEST.json)" = "$UPSTREAM_REPOSITORY"
+          test "$(jq -r '.upstreamCommit' SOURCE_DIVERGENCE_MANIFEST.json)" = "$UPSTREAM_COMMIT"
+          test "$(jq -r '.schemaVersion' SOURCE_DIVERGENCE_MANIFEST.json)" = 1
+
+      - name: Verify pinned upstream and declared source divergence
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/kpatch-next
+          git clone --filter=blob:none --no-checkout "https://github.com/${UPSTREAM_REPOSITORY}.git" /tmp/kpatch-next
+          git -C /tmp/kpatch-next checkout --detach "$UPSTREAM_COMMIT"
+
+          find /tmp/kpatch-next/user -maxdepth 1 -type f \
+            \( -name '*.c' -o -name '*.h' \) -printf '%f\n' | sort -u > /tmp/upstream.txt
+          find src -maxdepth 1 -type f \
+            \( -name '*.c' -o -name '*.h' \) -printf '%f\n' | sort -u > /tmp/local.txt
+          jq -r '.added[]' SOURCE_DIVERGENCE_MANIFEST.json | sed 's#^src/##' | sort -u > /tmp/added.txt
+          jq -r '.modified[]' SOURCE_DIVERGENCE_MANIFEST.json | sed 's#^src/##' | sort -u > /tmp/modified.txt
+          cat /tmp/upstream.txt /tmp/added.txt | sort -u > /tmp/expected.txt
+          diff -u /tmp/expected.txt /tmp/local.txt
+
+          while IFS= read -r name; do
+            if grep -Fxq "$name" /tmp/modified.txt; then
+              ! cmp -s "/tmp/kpatch-next/user/$name" "src/$name"
+            else
+              cmp "/tmp/kpatch-next/user/$name" "src/$name"
+            fi
+          done < /tmp/upstream.txt
+
+          cmp /tmp/kpatch-next/banner banner
+          cmp /tmp/kpatch-next/kernel/patch/include/uapi/scdefs.h src/uapi/scdefs.h
+          cmp /tmp/kpatch-next/version version
+          cmp /tmp/kpatch-next/revision revision
+          cmp /tmp/kpatch-next/LICENSE LICENSE
+
+      - name: Run host regressions
+        run: |
+          sh tests/run_cli_contract_tests.sh
+          sh tests/run_argv0_tests.sh
+
+      - name: Build twice and verify deterministic ARM64 output
+        run: |
+          set -euo pipefail
+          for dir in android-a android-b; do
+            cmake -S . -B "build/$dir" -G Ninja \
+              -DCMAKE_TOOLCHAIN_FILE="${{ steps.ndk.outputs.ndk-path }}/build/cmake/android.toolchain.cmake" \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DANDROID_PLATFORM=android-33 \
+              -DANDROID_ABI=arm64-v8a
+            cmake --build "build/$dir" --target kpatch --parallel
+          done
+          mkdir -p out
+          cp build/android-a/kpatch out/kpatch-android
+          cmp build/android-a/kpatch build/android-b/kpatch
+          sha256sum out/kpatch-android > out/kpatch-android.sha256
+          file out/kpatch-android | grep -q 'ELF 64-bit.*ARM aarch64'
+          "${{ steps.ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf" -l out/kpatch-android | grep -q '/system/bin/linker64'
+
+      - name: Upload CLI artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: patchnest-cli-${{ github.sha }}
+          path: |
+            cli/out/kpatch-android
+            cli/out/kpatch-android.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+  sanitizers:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: cli
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+
+      - name: Reject unbounded program-name copies
+        run: |
+          set -euo pipefail
+          if grep -R -n -E '\b(strcat|strcpy)\s*\(' src --include='*.c' --include='*.h'; then
+            echo "::error::Unbounded string copy/concatenation is forbidden"
+            exit 1
+          fi
+
+      - name: Run ASan and UBSan regressions
+        env:
+          CC: gcc
+        run: sh tests/run_sanitizer_tests.sh
+
+  public1158:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: cli
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+
+      - name: Host ABI contract
+        run: sh tests/run_cli_contract_tests.sh
+
+      - name: Setup Android NDK
+        id: ndk
+        uses: nttld/setup-ndk@ed92fe6cadad69be94a966a7ee3271275e62f779
+        with:
+          ndk-version: r26b
+
+      - name: Build and inspect isolated Public1158 binary
+        run: |
+          set -euo pipefail
+          cmake -S . -B build/public1158 -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="${{ steps.ndk.outputs.ndk-path }}/build/cmake/android.toolchain.cmake" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DANDROID_PLATFORM=android-33 \
+            -DANDROID_ABI=arm64-v8a
+          cmake --build build/public1158 --target kpatch-public1158 --parallel
+          binary=build/public1158/kpatch-public1158
+          test -s "$binary"
+          file "$binary" | grep -q 'ELF 64-bit.*ARM aarch64'
+          strings "$binary" | grep -Fxq public1158
+          strings "$binary" | grep -Fxq hello1158
+          ! strings "$binary" | grep -Fxq hello2026

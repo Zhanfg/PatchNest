@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- UI Labels -->
+    <string name="title_patch">Патч</string>
+    <string name="title_unpatch">UnPatch</string>
+    <string name="title_kpmodule">KPModule</string>
+    <string name="title_exclude">Винятки</string>
+    <string name="title_settings">Налаштування</string>
+    <string name="title_home">Головна</string>
+    <string name="title_language">Мова</string>
+    <string name="title_control_kpmodule">Керування KPModule</string>
+    <string name="title_select_language">Виберіть мову</string>
+    <string name="title_reboot">Перезавантаження</string>
+    <string name="title_reboot_recovery">Перезавантаження в Recovery</string>
+    <string name="title_reboot_bootloader">Перезавантаження в Bootloader</string>
+    <string name="title_reboot_download">Перезавантаження в Download</string>
+    <string name="title_reboot_edl">Перезавантаження в EDL</string>
+    <string name="title_kernel">Ядро</string>
+    <string name="title_rehook_syscall">Перехоплення Syscall</string>
+    <!-- Buttons -->
+    <string name="button_install">Натисніть, щоб встановити</string>
+    <string name="button_uninstall">Видалити</string>
+    <string name="button_embed_kpm">Вбудувати KPM</string>
+    <string name="button_start">Почати</string>
+    <string name="button_unpatch">UnPatch</string>
+    <string name="button_cancel">Скасувати</string>
+    <string name="button_ok">ОК</string>
+    <string name="button_load">Завантажити</string>
+    <string name="button_unload">Вивантажити</string>
+    <string name="button_refresh">Оновити</string>
+    <!-- Labels -->
+    <string name="label_input_control_parameters">Вхідні параметри керування:</string>
+    <string name="label_parameters">Параметри</string>
+    <string name="label_load_temporarily">Тимчасово завантажити</string>
+    <string name="label_show_system_app">Показувати системні додатки</string>
+    <string name="label_system_default">Системні за замовчуванням</string>
+    <string name="label_trigger_event">Тригерна подія</string>
+    <string name="label_flash_to_device">Прошити на пристрій</string>
+    <!-- Status -->
+    <string name="status_not_installed">Не встановлено</string>
+    <string name="status_working">Працює 😋</string>
+    <string name="status_loading">Завантаження...</string>
+    <!-- Info -->
+    <string name="info_kernel_version">Версія ядра</string>
+    <string name="info_system_version">Версія системи</string>
+    <string name="info_fingerprint">Фінгерпрінт</string>
+    <string name="info_selinux_status">Стан SELinux</string>
+    <string name="info_version">Версія: %1$s</string>
+    <string name="info_time">Час: %1$s</string>
+    <string name="info_config">Конфігурація: %1$s</string>
+    <string name="info_slot">Слот: %1$s</string>
+    <string name="info_device">Девайс: %1$s</string>
+    <string name="info_device_unknown">Девайс: невідомо</string>
+    <string name="info_author">Автор: %1$s</string>
+    <string name="info_args">Аргументи: %1$s</string>
+    <string name="info_no_description">Без опису</string>
+    <string name="info_embedded">ВБУДОВАНО</string>
+    <string name="info_user">ЮЗЕР %1$s</string>
+    <string name="info_system">СИСТЕМА</string>
+    <!-- Messages -->
+    <string name="msg_no_module_loaded">Модулі не завантажені</string>
+    <string name="msg_no_app_found">Не знайдено жодного додатка</string>
+    <string name="msg_no_module_found">Модуль не знайдено</string>
+    <string name="msg_module_loaded">%1$s буде завантажено.</string>
+    <string name="msg_unload_module">Вивантажити модуль %1$s?</string>
+    <string name="msg_redirecting_to">Перенаправлення на %1$s</string>
+    <string name="msg_failed_open_link"><string name="msg_failed_open_link">Не вдалося відкрити посилання за допомогою exec</string></string>
+    <string name="msg_invalid_link">Invalid link — only http/https URLs are allowed</string>
+    <string name="msg_failed_parse_kernel">Не вдалося проаналізувати ядро:</string>
+    <string name="msg_boot_extract_failed">Не вдалося витягнути завантажувальний файл</string>
+    <string name="msg_failed_locate_boot"><string name="msg_failed_locate_boot">Не вдалося знайти завантажувальний образ</string></string>
+    <string name="msg_failed_unpack_boot">Failed to unpack boot image</string>
+    <string name="msg_invalid_kpm_file">Недійсний файл KPM</string>
+    <string name="msg_could_not_parse_kpm">Не вдалося проаналізувати інформацію KPM</string>
+    <string name="msg_error_no_boot_image">Помилка: Не знайдено завантажувального образу.</string>
+    <string name="msg_please_select_file">Будь ласка, виберіть файл %1$s</string>
+    <string name="msg_please_wait">Будь ласка, зачекайте...</string>
+    <string name="msg_uploading">Завантаження...</string>
+    <string name="msg_upload_cancelled">Завантаження скасовано</string>
+    <string name="msg_error">Помилка: %1$s</string>
+    <string name="msg_successfully_loaded">Успішно завантажено %1$s</string>
+    <string name="msg_failed_load_module">Не вдалося завантажити модуль %1$s</string>
+    <string name="msg_failed_get_module_info">Не вдалося отримати інформацію про модуль</string>
+    <string name="msg_error_loading_apps">Помилка завантаження програм: </string>
+    <string name="msg_error_rendering_apps">Помилка рендерингу програм: </string>
+    <string name="msg_unknown">Невідомо</string>
+    <string name="title_logs">Логи</string>
+    <string name="title_backups">Бекапи</string>
+    <string name="title_repository">Репозиторій</string>
+    <string name="title_repo_url">URL репозиторію</string>
+    <string name="title_binary_source">Джерело бінарників</string>
+    <string name="title_select_source">Оберіть джерело</string>
+    <string name="button_save_to_storage">Зберегти</string>
+    <string name="button_delete">Видалити</string>
+    <string name="desc_patchnest">Автономна реалізація, розширена підтримка ядер (3.18-6.12)</string>
+    <string name="desc_kernelpatch">Оригінальний проєкт, активні оновлення безпеки</string>
+    <string name="msg_no_log">Немає логів</string>
+    <string name="msg_no_backups">Немає бекапів</string>
+    <string name="msg_log_cleared">Лог очищено</string>
+    <string name="msg_backup_saved">Бекап збережено до Завантажень</string>
+    <string name="msg_backup_deleted"><string name="msg_backup_deleted">Бекап видалено</string></string>
+    <string name="confirm_delete_backup">Delete backup "%1$s"?</string>
+    <string name="msg_source_switched">Джерело змінено, перезавантажте</string>
+    <string name="msg_source_reboot">* Потрібне перезавантаження</string>
+    <string name="msg_installing_kpm">Встановлення KPM пакету...</string>
+    <string name="msg_kpm_installed">KPM пакет встановлено</string>
+    <string name="msg_no_modules_in_repo">У репозиторії немає модулів</string>
+    <string name="msg_repo_fetch_failed">Помилка завантаження репозиторію</string>
+    <string name="msg_no_download_url">Немає URL для завантаження</string>
+    <string name="msg_repo_url_updated">URL репозиторію оновлено</string>
+    <string name="title_what_is_new">Що нового</string>
+    <string name="button_close">Закрити</string>
+    <string name="button_view_full_changelog">Переглянути повний список змін</string>
+    <!-- Theme picker -->
+    <string name="title_theme">Тема</string>
+    <string name="title_select_theme">Виберіть тему</string>
+    <string name="theme_auto">Як у системі</string>
+    <string name="theme_light">Світла</string>
+    <string name="theme_dark">Темна</string>
+    <!-- Safe mode indicator -->
+    <string name="title_safemode">Безпечний режим</string>
+    <string name="status_safemode_on">Активний — SU та KPM заблоковано</string>
+    <string name="status_safemode_off">Вимкнено</string>
+    <string name="status_safemode_unknown">Невідомо (kp-safemode не встановлено)</string>
+    <!-- Patch step progress -->
+    <string name="title_progress">Прогрес</string>
+    <string name="patch_step_extract">Знайти та розпакувати образ boot</string>
+    <string name="patch_step_validate">Перевірити вбудовані KPM</string>
+    <string name="patch_step_patch">Патч ядра</string>
+    <string name="patch_step_repack">Перезібрати образ boot</string>
+    <string name="patch_step_flash">Прошити на пристрій</string>
+    <string name="patch_step_unpatch">Відкотити патч ядра</string>
+    <!-- Backup SHA256 -->
+    <string name="button_copy_hash">Копіювати SHA256</string>
+    <string name="msg_hash_copied">SHA256 скопійовано</string>
+    <string name="msg_hash_copy_failed">Помилка копіювання</string>
+    <!-- Boot/kernel metadata -->
+    <string name="info_security_patch">Патч безпеки: %1</string>
+    <string name="info_os_version">Версія ОС: %1</string>
+    <string name="info_size">Розмір: %1</string>
+    <!-- KPM filter chips -->
+    <string name="filter_all">Усі</string>
+    <string name="filter_loaded">Завантажені</string>
+    <string name="filter_with_event">З подією</string>
+    <!-- Exclude list import/export -->
+    <string name="button_export">Експорт</string>
+    <string name="button_import">Імпорт</string>
+    <string name="msg_export_empty">Немає виключених додатків для експорту</string>
+    <string name="msg_export_success">Експортовано до %1</string>
+    <string name="msg_export_failed">Помилка експорту</string>
+    <string name="msg_import_success">%1 додатків імпортовано</string>
+    <string name="msg_import_failed">Помилка імпорту: %1</string>
+    <!-- Update checker -->
+    <string name="title_update_available">Доступне оновлення</string>
+    <string name="title_check_update">Перевірити оновлення</string>
+    <string name="update_new_version">Нова версія</string>
+    <string name="update_current">Встановлено: %1</string>
+    <string name="update_hint">Доступна нова версія PatchNest. Натисніть Завантажити, щоб відкрити сторінку релізу в браузері.</string>
+    <string name="update_available">%1 доступна</string>
+    <string name="update_up_to_date">Актуальна</string>
+    <string name="update_download_started">Відкриття завантаження...</string>
+    <string name="update_download_failed">Не вдалося відкрити завантаження</string>
+    <string name="update_no_url"><string name="update_no_url">Немає URL для завантаження в update.json</string></string>
+    <string name="update_invalid_url">Invalid download URL — only http/https links are accepted</string>
+    <string name="button_later">Пізніше</string>
+    <string name="button_download">Завантажити</string>
+    <string name="status_checking">Перевірка...</string>
+    <!-- Multi-repo manager -->
+    <string name="title_repo_manager">Керування репозиторіями</string>
+    <string name="button_add_repo">Додати репозиторій</string>
+    <string name="button_save">Зберегти</string>
+    <string name="repo_official">Офіційний</string>
+    <string name="repo_main">Головний</string>
+    <string name="repo_more">ще</string>
+    <string name="repo_placeholder_name">Відображуване ім'я</string>
+    <!-- Backup purge -->
+    <string name="title_purge_backups">Видалити старі бекапи</string>
+    <string name="label_keep_count">Зберегти останніх бекапів:</string>
+    <string name="button_purge">Видалити</string>
+    <string name="button_purge_old">Очистити старі</string>
+    <string name="purge_none_to_delete">Нема чого видаляти — ваш ліміт зберігання охоплює всі поточні бекапи.</string>
+    <string name="purge_will_delete">Буде видалено %1 старих бекапів.</string>
+    <string name="msg_purged">%1 старих бекапів видалено</string>
+    <!-- Exclude profiles -->
+    <string name="title_profiles">Профілі</string>
+    <string name="title_save_profile">Зберегти профіль</string>
+    <string name="title_load_profile">Завантажити профіль</string>
+    <string name="label_profile_name">Назва профілю:</string>
+    <string name="label_select_profile">Виберіть профіль для застосування:</string>
+    <string name="button_save_profile">Зберегти поточний як профіль</string>
+    <string name="button_load_profile">Завантажити профіль</string>
+    <string name="profile_count">%1 додатків</string>
+    <string name="msg_no_profiles">Немає збережених профілів</string>
+    <string name="msg_profile_saved">Профіль «%1» збережено</string>
+    <string name="msg_profile_loaded">Профіль «%1» застосовано</string>
+    <string name="info_root_manager">Root-менеджер</string>
+    <string name="title_module_config">Конфігурація модуля</string>
+    <string name="label_config_key">Ключ конфігурації</string>
+    <string name="label_config_value">Значення</string>
+    <string name="button_save_config">Зберегти</string>
+    <string name="button_open_in_ksu">Відкрити в KSU Manager</string>
+    <string name="msg_module_disabled">Модуль вимкнено в менеджері</string>
+    <string name="msg_no_config">Немає записів конфігурації — введіть нижче «key=value» і натисніть Зберегти</string>
+
+      <string name="title_stealth">Stealth</string>
+      <string name="title_stealth_center">Stealth Center</string>
+      <string name="subtitle_stealth_center">Toggle each KernelPatch module to hide root/hook signals from app scanners. Changes apply on next boot.</string>
+      <string name="msg_no_stealth_modules">No stealth modules installed. Install from the Repository tab.</string>
+      <string name="stealth_hint_reboot">Takes effect on next boot</string>
+      <string name="toast_stealth_enabled">%1$s enabled. Reboot to apply.</string>
+      <string name="toast_stealth_disabled">%1$s disabled. Reboot to apply.</string>
+      <string name="title_kpm_sig_policy">KPM signature check</string>
+      <string name="sig_policy_off">Off — load everything (no checks)</string>
+      <string name="sig_policy_warn">Warn — load everything, flag unsigned</string>
+      <string name="sig_policy_strict">Strict — reject unsigned</string>
+      <string name="sig_policy_off_short">Off</string>
+      <string name="sig_policy_warn_short">Warn</string>
+      <string name="sig_policy_strict_short">Strict</string>
+      <string name="title_unsigned_modules_warning">Unsigned KPM modules loaded</string>
+      <string name="unsigned_modules_count">%1$d module(s) loaded without a signature: %2$s. See /data/adb/patchnest/unsigned_modules.log</string>
+      <string name="toast_sig_policy_saved">Signature policy saved. Reboot to apply.</string>
+      <string name="update_verify_sha">Verify SHA-256 starts with: %1$s</string>
+      <string name="update_unsigned_warning">This update is NOT signed. Refusing to download for safety. Please install manually after verifying the release.</string>
+      <string name="tag_signed">Signed</string>
+      <string name="kpm_stat_state">State</string>
+      <string name="kpm_stat_size">Size</string>
+      <string name="kpm_stat_uptime">Uptime</string>
+      <string name="kpm_stat_last_event">Last event</string>
+      <string name="kpm_stat_filters">Filters</string>
+      <string name="kpm_stat_errors">Errors</string>
+      <string name="kpm_stat_build">Build</string>
+      <string name="kpm_stat_unsigned_warn">Warning: unsigned module loaded (warn policy)</string>
+      <string name="kpm_stat_just_now">just now</string>
+      <string name="kpm_state_loaded">Loaded</string>
+      <string name="kpm_state_failed">Failed</string>
+      <string name="kpm_state_pending">Pending</string>
+      <string name="kpm_state_unknown">Unknown</string>
+      <string name="kpm_hero_ok">System OK · %1$d loaded · %2$d failed</string>
+      <string name="kpm_hero_down">System DEGRADED · %1$d loaded · %2$d failed</string>
+      <string name="kpm_hero_empty">No KPM modules loaded</string>
+      <string name="kpm_dashboard_full_title">KPM dashboard</string>
+      <string name="kpm_dashboard_expand">View full dashboard</string>
+      <string name="kpm_update_badge">Update: %1$s</string>
+      <string name="kpm_update_available_tooltip">Installed: %1$s — newer version available: %2$s</string>
+      <string name="kpm_update_button_title">Install update from repository</string>
+      <string name="kpm_updates_available_toast">%1$d KPM update(s) available — open the KPM page to upgrade</string>
+      <string name="title_install_from_url">Install KPM from URL</string>
+      <string name="hint_install_from_url">Direct link to a .kpm or .zip file. SHA256-verified modules are preferred.</string>
+      <string name="title_auto_unpatch">Auto-Unpatch Recovery Plan</string>
+      <string name="button_continue">Continue</string>
+      <string name="yes">yes</string>
+      <string name="no">no</string>
+      <string name="auto_unpatch_summary">Your backup is: %1$s (%2$s)\nVerified: %3$s</string>
+      <string name="auto_unpatch_no_backup">No backup found. Auto-unpatch cannot run safely.</string>
+      <string name="auto_unpatch_no_backup_warn">Proceeding will leave the device in an unpatched state with no recovery path.</string>
+      <string name="auto_unpatch_unverified_warn">This backup was NOT verified by magiskboot — proceed at your own risk.</string>
+      <string name="auto_unpatch_lose">If auto_unpatch runs, you will LOSE:</string>
+      <string name="auto_unpatch_lose_kp_patches">Kp kernel patches (kimg -Y)</string>
+      <string name="auto_unpatch_lose_kpm_modules">All loaded KPM modules (stealth-*, selinux_hook, etc.)</string>
+      <string name="auto_unpatch_lose_nothing">No Kp-specific state recorded in the backup.</string>
+      <string name="auto_unpatch_keep">You will KEEP:</string>
+      <string name="auto_unpatch_keep_magisk">Magisk root (AK3, version %1$s)</string>
+      <string name="auto_unpatch_keep_ksu">KernelSU (version %1$s)</string>
+      <string name="auto_unpatch_keep_non_kp">All non-Kp modifications in the backup.</string>
+      <string name="auto_unpatch_keep_unknown">Unknown — manifest not found for this backup.</string>
+      <string name="msg_unpatch_done">Unpatch complete.</string>
+      <string name="msg_unpatch_failed">Unpatch failed: %1$s</string>
+      <string name="msg_cancelled">Cancelled.</string>
+</resources>
