@@ -48,7 +48,7 @@ const { getRepos, setRepos } = await import('../page/kpm_repo.js');
 
 // The localStorage key used by kpm_repo.js (verified by reading the source).
 const REPOS_KEY = 'patchnest_repos';
-const DEFAULT_URL = 'https://raw.githubusercontent.com/Zhanfg/PatchNest-Kpms/main/kpm_repo.json';
+const DEFAULT_URL = 'https://raw.githubusercontent.com/Zhanfg/PatchNest/main/kpms/kpm_repo.json';
 
 describe('getRepos / setRepos — localStorage round-trip', () => {
     it('returns the default repo when localStorage is empty (first run)', () => {
