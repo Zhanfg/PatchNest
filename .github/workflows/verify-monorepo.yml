@@ -1,3 +1,4 @@
+# rerun: canonical reference fixes applied
 name: One-shot PatchNest monorepo verification
 
 on:
