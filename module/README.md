@@ -8,17 +8,15 @@ PatchNest Module provides a KPM host and management WebUI for Magisk, KernelSU, 
 
 | Repository | Responsibility |
 |---|---|
-| [`Zhanfg/PatchNest-Module`](https://github.com/Zhanfg/PatchNest-Module) | Module installer, WebUI, package and update entry point |
-| [`Zhanfg/KernelPatch-Public`](https://github.com/Zhanfg/KernelPatch-Public) | Source and releases for `kpimg` and `kptools` |
-| [`Zhanfg/PatchNest`](https://github.com/Zhanfg/PatchNest) | Source/release location for the `kpatch` user-space tool |
-| [`Zhanfg/PatchNest-Kpms`](https://github.com/Zhanfg/PatchNest-Kpms) | KPM source and catalog |
+| [`Zhanfg/PatchNest`](https://github.com/Zhanfg/PatchNest) | Canonical monorepo: `cli/`, `module/`, WebUI, and `kpms/` |
+| [`Zhanfg/KernelPatch-Public`](https://github.com/Zhanfg/KernelPatch-Public) | Independent source and releases for `kpimg` and `kptools` |
 
 ## KPM repository
 
 The default catalog is:
 
 ```text
-https://raw.githubusercontent.com/Zhanfg/PatchNest-Kpms/main/kpm_repo.json
+https://raw.githubusercontent.com/Zhanfg/PatchNest/main/kpms/kpm_repo.json
 ```
 
 The WebUI also accepts additional HTTPS catalog URLs. A system-wide catalog override can be placed at:
@@ -27,11 +25,11 @@ The WebUI also accepts additional HTTPS catalog URLs. A system-wide catalog over
 /data/adb/patchnest/repos.json
 ```
 
-Catalog source, build and release work is maintained in `PatchNest-Kpms`; KPM binaries are not built into the PatchNest Module archive.
+Catalog source and validation live in the monorepo `kpms/` component; KPM binaries are not built into the PatchNest Module archive.
 
 ## Build integrity
 
-Dependency versions and trusted release digests are pinned in `version.properties`. Both local and CI builds reject missing or mismatched SHA256 values. Release tags use the form `v<internal-version>`, while `module.prop` and `update.json` use the version without the `v` prefix.
+Dependency versions and trusted release digests are pinned in `version.properties`. Both local and CI builds reject missing or mismatched SHA256 values. Historical standalone Module releases keep their original `v<internal-version>` tags. New canonical Module releases use the `module-v<internal-version>` namespace; `module.prop` and `update.json` keep the internal version without a tag prefix.
 
 The current restart baseline and remaining work are recorded in [`docs/restart/BASELINE.md`](docs/restart/BASELINE.md).
 
