@@ -6,7 +6,7 @@ import { escapeHTML } from './utils.js';
 import { linkRedirect } from './constants.js';
 
 const LAST_SEEN_KEY = 'patchnest_changelog_last_seen';
-const CHANGELOG_URL = 'https://raw.githubusercontent.com/Zhanfg/PatchNest-Module/main/CHANGELOG.md';
+const CHANGELOG_URL = 'https://raw.githubusercontent.com/Zhanfg/PatchNest/main/module/CHANGELOG.md';
 
 // Keep these in sync with CHANGELOG.md / module.prop / update.json.
 // Each entry is shown in the modal as a bullet; sub-bullets use a leading
