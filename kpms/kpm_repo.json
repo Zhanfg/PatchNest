@@ -1,0 +1,7 @@
+{
+  "name": "PatchNest Official KPM Repository",
+  "description": "Verified KPM releases for PatchNest. Draft prototypes are excluded until they compile against the pinned KernelPatch KPM SDK and pass device validation.",
+  "version": 1,
+  "updatedAt": "2026-08-06",
+  "modules": []
+}
