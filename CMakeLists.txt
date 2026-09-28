@@ -26,7 +26,17 @@ set(SRCS
 add_library(kp STATIC ${SRCS})
 add_executable(kpatch ${SRCS} src/main.c)
 
-foreach(target kp kpatch)
+# Transitional compatibility binary for PatchNest-Module's pinned
+# KernelPatch-Public 0.13.x kernel side. It is intentionally a distinct build
+# artifact: command IDs 0x1100/0x1101 are not semantically compatible with
+# Next2026, so runtime mutation probing would be unsafe.
+add_executable(kpatch-public1158 ${SRCS} src/main.c)
+target_compile_definitions(kpatch-public1158 PRIVATE
+    PATCHNEST_ABI_PUBLIC1158=1
+    SUPERCALL_KEY_MAX_LEN=0x40
+)
+
+foreach(target kp kpatch kpatch-public1158)
     target_compile_options(${target} PRIVATE
         -Wall
         -Wextra
@@ -37,15 +47,11 @@ foreach(target kp kpatch)
     )
 endforeach()
 
-target_link_options(kp PRIVATE
-    "-Wl,--build-id=none"
-    "-Wl,-icf=safe,--lto-O3"
-    "-Wl,-s,-x,--gc-sections"
-    "-Wl,--no-undefined"
-)
-target_link_options(kpatch PRIVATE
-    "-Wl,--build-id=none"
-    "-Wl,-icf=safe,--lto-O3"
-    "-Wl,-s,-x,--gc-sections"
-    "-Wl,--no-undefined"
-)
+foreach(target kp kpatch kpatch-public1158)
+    target_link_options(${target} PRIVATE
+        "-Wl,--build-id=none"
+        "-Wl,-icf=safe,--lto-O3"
+        "-Wl,-s,-x,--gc-sections"
+        "-Wl,--no-undefined"
+    )
+endforeach()

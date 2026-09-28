@@ -10,6 +10,7 @@ on:
     branches:
       - main
       - 'restart/**'
+      - 'fix/**'
   workflow_dispatch:
 
 env:
@@ -34,7 +35,35 @@ jobs:
         with:
           ndk-version: r26b
 
-      - name: Verify legacy tag and source manifest
+      - name: Record source and tested checkout identity
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          tested_checkout=$(git rev-parse HEAD)
+          source_head="$GITHUB_SHA"
+          base_commit=""
+          tested_merge=""
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            source_head="$PR_HEAD_SHA"
+            base_commit="$PR_BASE_SHA"
+            tested_merge="$tested_checkout"
+          fi
+          test -n "$source_head"
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            test -n "$base_commit"
+            test -n "$tested_merge"
+            test "$source_head" != "$tested_merge"
+          fi
+          {
+            echo "SOURCE_HEAD_COMMIT=$source_head"
+            echo "BASE_COMMIT=$base_commit"
+            echo "TESTED_CHECKOUT_COMMIT=$tested_checkout"
+            echo "TESTED_MERGE_COMMIT=$tested_merge"
+          } >> "$GITHUB_ENV"
+
+      - name: Verify legacy tag and source manifests
         run: |
           set -euo pipefail
 
@@ -54,7 +83,15 @@ jobs:
           test "$manifest_directory" = user
           test "$manifest_version" = "$RELEASE_VERSION"
 
-      - name: Verify imported source snapshot in both directions
+          divergence_repo=$(jq -r '.upstreamRepository' SOURCE_DIVERGENCE_MANIFEST.json)
+          divergence_commit=$(jq -r '.upstreamCommit' SOURCE_DIVERGENCE_MANIFEST.json)
+          divergence_directory=$(jq -r '.upstreamDirectory' SOURCE_DIVERGENCE_MANIFEST.json)
+          test "$divergence_repo" = "$UPSTREAM_REPOSITORY"
+          test "$divergence_commit" = "$UPSTREAM_COMMIT"
+          test "$divergence_directory" = user
+          test "$(jq -r '.schemaVersion' SOURCE_DIVERGENCE_MANIFEST.json)" = 1
+
+      - name: Verify pinned upstream and declared source divergence
         run: |
           set -euo pipefail
           rm -rf /tmp/kpatch-next
@@ -65,18 +102,57 @@ jobs:
 
           find /tmp/kpatch-next/user -maxdepth 1 -type f \
             \( -name '*.c' -o -name '*.h' \) \
-            -printf '%f\n' | sort > /tmp/upstream-source-list.txt
+            -printf '%f\n' | sort -u > /tmp/upstream-source-list.txt
           find src -maxdepth 1 -type f \
             \( -name '*.c' -o -name '*.h' \) \
-            -printf '%f\n' | sort > /tmp/local-source-list.txt
-          diff -u /tmp/upstream-source-list.txt /tmp/local-source-list.txt
+            -printf '%f\n' | sort -u > /tmp/local-source-list.txt
+
+          jq -r '.added[]' SOURCE_DIVERGENCE_MANIFEST.json \
+            | sed 's#^src/##' | sort -u > /tmp/declared-added.txt
+          jq -r '.modified[]' SOURCE_DIVERGENCE_MANIFEST.json \
+            | sed 's#^src/##' | sort -u > /tmp/declared-modified.txt
+
+          test "$(wc -l < /tmp/declared-added.txt)" -eq "$(jq '.added | length' SOURCE_DIVERGENCE_MANIFEST.json)"
+          test "$(wc -l < /tmp/declared-modified.txt)" -eq "$(jq '.modified | length' SOURCE_DIVERGENCE_MANIFEST.json)"
+          if comm -12 /tmp/declared-added.txt /tmp/declared-modified.txt | grep -q .; then
+            echo '::error::A source file cannot be both added and modified'
+            exit 1
+          fi
+
+          cat /tmp/upstream-source-list.txt /tmp/declared-added.txt | sort -u > /tmp/expected-local-source-list.txt
+          diff -u /tmp/expected-local-source-list.txt /tmp/local-source-list.txt || {
+            echo '::error::Local source inventory contains undeclared additions or missing upstream files'
+            exit 1
+          }
 
           while IFS= read -r name; do
-            cmp "/tmp/kpatch-next/user/$name" "src/$name" || {
-              echo "::error file=src/$name::Source differs from pinned upstream snapshot"
+            if grep -Fxq "$name" /tmp/declared-modified.txt; then
+              if cmp -s "/tmp/kpatch-next/user/$name" "src/$name"; then
+                echo "::error file=src/$name::Declared modification is byte-identical to upstream; remove stale declaration"
+                exit 1
+              fi
+            else
+              cmp "/tmp/kpatch-next/user/$name" "src/$name" || {
+                echo "::error file=src/$name::Source differs from pinned upstream but is not declared modified"
+                exit 1
+              }
+            fi
+          done < /tmp/upstream-source-list.txt
+
+          while IFS= read -r name; do
+            test -f "src/$name"
+            test ! -e "/tmp/kpatch-next/user/$name" || {
+              echo "::error file=src/$name::Declared added file already exists upstream"
               exit 1
             }
-          done < /tmp/upstream-source-list.txt
+          done < /tmp/declared-added.txt
+
+          while IFS= read -r name; do
+            grep -Fxq "$name" /tmp/upstream-source-list.txt || {
+              echo "::error file=src/$name::Declared modified file does not exist in pinned upstream"
+              exit 1
+            }
+          done < /tmp/declared-modified.txt
 
           cmp /tmp/kpatch-next/banner banner
           cmp /tmp/kpatch-next/kernel/patch/include/uapi/scdefs.h src/uapi/scdefs.h
@@ -84,7 +160,13 @@ jobs:
           cmp /tmp/kpatch-next/revision revision
           cmp /tmp/kpatch-next/LICENSE LICENSE
 
-      - name: Configure first Android build
+      - name: Run host CLI regression tests
+        run: |
+          set -euo pipefail
+          sh tests/run_cli_contract_tests.sh
+          sh tests/run_argv0_tests.sh
+
+      - name: Configure first current Android build
         run: |
           set -euo pipefail
           cmake -S . -B build/android-a \
@@ -94,10 +176,10 @@ jobs:
             -DANDROID_PLATFORM=android-33 \
             -DANDROID_ABI=arm64-v8a
 
-      - name: Build first Android CLI
+      - name: Build first current Android CLI
         run: cmake --build build/android-a --target kpatch --parallel
 
-      - name: Configure second Android build
+      - name: Configure second current Android build
         run: |
           set -euo pipefail
           cmake -S . -B build/android-b \
@@ -107,7 +189,7 @@ jobs:
             -DANDROID_PLATFORM=android-33 \
             -DANDROID_ABI=arm64-v8a
 
-      - name: Build second Android CLI
+      - name: Build second current Android CLI
         run: cmake --build build/android-b --target kpatch --parallel
 
       - name: Verify deterministic current build
@@ -120,7 +202,7 @@ jobs:
           cmp out/kpatch-android out/kpatch-android-second
           sha256sum out/kpatch-android | tee out/kpatch-android.sha256
 
-      - name: Inspect Android ABI and dynamic contract
+      - name: Inspect current Android ABI and dynamic contract
         run: |
           set -euo pipefail
           llvm_root="${{ steps.ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin"
@@ -129,22 +211,51 @@ jobs:
           printf '%s' "$description" | grep -q 'ELF 64-bit.*ARM aarch64'
           printf '%s' "$description" | grep -q 'pie executable'
           printf '%s' "$description" | grep -q 'interpreter /system/bin/linker64'
-          "$llvm_root/llvm-readelf" -h -l -d out/kpatch-android | tee out/elf-report.txt
-          "$llvm_root/llvm-readelf" -l out/kpatch-android | grep -q '/system/bin/linker64'
+          "$llvm_root/llvm-readelf" -h -l -d out/kpatch-android > out/elf-report.txt
+          cat out/elf-report.txt
+          grep -q '/system/bin/linker64' out/elf-report.txt
 
-      - name: Compare immutable legacy release
+      - name: Build pristine pinned-upstream legacy baseline
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/patchnest-legacy-source build/legacy
+          mkdir -p /tmp/patchnest-legacy-source
+          rsync -a \
+            --exclude='.git' \
+            --exclude='build' \
+            --exclude='out' \
+            --exclude='reference' \
+            ./ /tmp/patchnest-legacy-source/
+
+          rm -rf /tmp/patchnest-legacy-source/src
+          mkdir -p /tmp/patchnest-legacy-source/src/uapi
+          find /tmp/kpatch-next/user -maxdepth 1 -type f -exec cp -a {} /tmp/patchnest-legacy-source/src/ \;
+          cp /tmp/kpatch-next/kernel/patch/include/uapi/scdefs.h /tmp/patchnest-legacy-source/src/uapi/scdefs.h
+          cp /tmp/kpatch-next/banner /tmp/patchnest-legacy-source/banner
+          cp /tmp/kpatch-next/version /tmp/patchnest-legacy-source/version
+          cp /tmp/kpatch-next/revision /tmp/patchnest-legacy-source/revision
+          cp /tmp/kpatch-next/LICENSE /tmp/patchnest-legacy-source/LICENSE
+
+          cmake -S /tmp/patchnest-legacy-source -B build/legacy \
+            -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="${{ steps.ndk.outputs.ndk-path }}/build/cmake/android.toolchain.cmake" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DANDROID_PLATFORM=android-33 \
+            -DANDROID_ABI=arm64-v8a
+          cmake --build build/legacy --target kpatch --parallel
+          cp build/legacy/kpatch out/kpatch-android-legacy-rebuilt
+          legacy_rebuilt_sha=$(sha256sum out/kpatch-android-legacy-rebuilt | awk '{print $1}')
+          echo "Rebuilt legacy SHA256: $legacy_rebuilt_sha"
+          test "$legacy_rebuilt_sha" = "$RELEASE_SHA256" || {
+            echo "::error::Pinned upstream baseline no longer reproduces legacy release $RELEASE_VERSION"
+            exit 1
+          }
+
+      - name: Verify immutable legacy release asset
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          actual=$(sha256sum out/kpatch-android | awk '{print $1}')
-          echo "Built SHA256:    $actual"
-          echo "Expected SHA256: $RELEASE_SHA256"
-          test "$actual" = "$RELEASE_SHA256" || {
-            echo "::error::Build is not byte-for-byte reproducible with release $RELEASE_VERSION"
-            exit 1
-          }
-
           mkdir -p reference
           gh release download "$RELEASE_VERSION" \
             -R Zhanfg/PatchNest \
@@ -152,17 +263,64 @@ jobs:
             -D reference
           reference_sha=$(sha256sum reference/kpatch-android | awk '{print $1}')
           test "$reference_sha" = "$RELEASE_SHA256"
-          cmp out/kpatch-android reference/kpatch-android
+          cmp out/kpatch-android-legacy-rebuilt reference/kpatch-android
+
+      - name: Record source divergence evidence
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          root = Path('.')
+          upstream = Path('/tmp/kpatch-next/user')
+          manifest = json.loads(Path('SOURCE_DIVERGENCE_MANIFEST.json').read_text())
+
+          def sha256(path):
+              return hashlib.sha256(path.read_bytes()).hexdigest()
+
+          evidence = {
+              'manifestSha256': sha256(Path('SOURCE_DIVERGENCE_MANIFEST.json')),
+              'added': [],
+              'modified': [],
+          }
+          for item in manifest['added']:
+              local = root / item
+              evidence['added'].append({
+                  'path': item,
+                  'localSha256': sha256(local),
+              })
+          for item in manifest['modified']:
+              local = root / item
+              base = upstream / Path(item).name
+              evidence['modified'].append({
+                  'path': item,
+                  'localSha256': sha256(local),
+                  'upstreamSha256': sha256(base),
+              })
+          Path('out/source-divergence.json').write_text(json.dumps(evidence, indent=2) + '\n')
+          PY
+          cat out/source-divergence.json
 
       - name: Write build provenance
         run: |
           set -euo pipefail
           ndk_revision=$(awk -F= '/Pkg.Revision/{gsub(/[[:space:]]/, "", $2); print $2}' \
             "${{ steps.ndk.outputs.ndk-path }}/source.properties")
-          binary_sha=$(sha256sum out/kpatch-android | awk '{print $1}')
+          current_sha=$(sha256sum out/kpatch-android | awk '{print $1}')
+          legacy_sha=$(sha256sum out/kpatch-android-legacy-rebuilt | awk '{print $1}')
+          base_json=null
+          merge_json=null
+          if [ -n "$BASE_COMMIT" ]; then base_json=$(jq -Rn --arg v "$BASE_COMMIT" '$v'); fi
+          if [ -n "$TESTED_MERGE_COMMIT" ]; then merge_json=$(jq -Rn --arg v "$TESTED_MERGE_COMMIT" '$v'); fi
           jq -n \
             --arg repository "$GITHUB_REPOSITORY" \
-            --arg sourceCommit "$GITHUB_SHA" \
+            --arg eventName "$GITHUB_EVENT_NAME" \
+            --arg sourceHeadCommit "$SOURCE_HEAD_COMMIT" \
+            --arg testedCheckoutCommit "$TESTED_CHECKOUT_COMMIT" \
+            --argjson baseCommit "$base_json" \
+            --argjson testedMergeCommit "$merge_json" \
             --arg upstreamRepository "$UPSTREAM_REPOSITORY" \
             --arg upstreamCommit "$UPSTREAM_COMMIT" \
             --arg legacyTag "$RELEASE_VERSION" \
@@ -170,15 +328,25 @@ jobs:
             --arg ndkRevision "$ndk_revision" \
             --arg androidPlatform android-33 \
             --arg androidAbi arm64-v8a \
-            --arg sha256 "$binary_sha" \
+            --arg currentSha256 "$current_sha" \
+            --arg legacySha256 "$legacy_sha" \
+            --slurpfile divergence out/source-divergence.json \
             '{
+              schemaVersion: 2,
               repository: $repository,
-              sourceCommit: $sourceCommit,
+              eventName: $eventName,
+              sourceHeadCommit: $sourceHeadCommit,
+              baseCommit: $baseCommit,
+              testedCheckoutCommit: $testedCheckoutCommit,
+              testedMergeCommit: $testedMergeCommit,
               upstreamRepository: $upstreamRepository,
               upstreamCommit: $upstreamCommit,
+              sourceDivergence: $divergence[0],
               legacyRelease: {
                 tag: $legacyTag,
-                tagCommit: $legacyTagCommit
+                tagCommit: $legacyTagCommit,
+                rebuiltSha256: $legacySha256,
+                byteIdenticalToReleaseAsset: true
               },
               toolchain: {
                 androidNdk: $ndkRevision,
@@ -187,9 +355,8 @@ jobs:
               },
               artifact: {
                 name: "kpatch-android",
-                sha256: $sha256,
-                byteIdenticalAcrossTwoBuildDirectories: true,
-                byteIdenticalToLegacyRelease: true
+                sha256: $currentSha256,
+                byteIdenticalAcrossTwoCurrentBuildDirectories: true
               }
             }' > out/build-provenance.json
           cat out/build-provenance.json
@@ -198,11 +365,13 @@ jobs:
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
-          name: patchnest-cli-${{ github.sha }}
+          name: patchnest-cli-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             out/kpatch-android
             out/kpatch-android.sha256
+            out/kpatch-android-legacy-rebuilt
             out/elf-report.txt
+            out/source-divergence.json
             out/build-provenance.json
           if-no-files-found: warn
           retention-days: 14
