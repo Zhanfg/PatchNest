@@ -8,17 +8,15 @@ PatchNest Module 为 Magisk、KernelSU、KernelSU-Next 和 APatch 提供 KPM 宿
 
 | 仓库 | 职责 |
 |---|---|
-| [`Zhanfg/PatchNest-Module`](https://github.com/Zhanfg/PatchNest-Module) | 模块安装器、WebUI、打包与更新入口 |
-| [`Zhanfg/KernelPatch-Public`](https://github.com/Zhanfg/KernelPatch-Public) | `kpimg`、`kptools` 的源码与发布资产 |
-| [`Zhanfg/PatchNest`](https://github.com/Zhanfg/PatchNest) | `kpatch` 用户态工具的源码与发布位置 |
-| [`Zhanfg/PatchNest-Kpms`](https://github.com/Zhanfg/PatchNest-Kpms) | KPM 源码与目录清单 |
+| [`Zhanfg/PatchNest`](https://github.com/Zhanfg/PatchNest) | canonical monorepo：`cli/`、`module/`、WebUI 与 `kpms/` |
+| [`Zhanfg/KernelPatch-Public`](https://github.com/Zhanfg/KernelPatch-Public) | 独立维护的 `kpimg`、`kptools` 源码与发布资产 |
 
 ## KPM 仓库
 
 默认目录地址：
 
 ```text
-https://raw.githubusercontent.com/Zhanfg/PatchNest-Kpms/main/kpm_repo.json
+https://raw.githubusercontent.com/Zhanfg/PatchNest/main/kpms/kpm_repo.json
 ```
 
 WebUI 也支持添加其他 HTTPS 目录。系统级目录覆盖文件位于：
@@ -27,7 +25,7 @@ WebUI 也支持添加其他 HTTPS 目录。系统级目录覆盖文件位于：
 /data/adb/patchnest/repos.json
 ```
 
-KPM 源码、构建和发布由 `PatchNest-Kpms` 独立维护，不再把目录中的 KPM 二进制直接打包进 PatchNest Module。
+KPM 源码与校验现在位于 monorepo 的 `kpms/` 组件；目录中的 KPM 二进制仍不会直接打包进 PatchNest Module。
 
 ## 构建完整性
 
@@ -40,7 +38,7 @@ KPM 源码、构建和发布由 `PatchNest-Kpms` 独立维护，不再把目录�
 Git 标签：v0.4.1-rc2
 ```
 
-`module.prop` 与 `update.json` 使用不带 `v` 的内部版本；发布流程自动生成带 `v` 的 Git 标签。
+历史独立 Module Release 保留原有 `v<版本>` 标签；canonical 仓库后续 Module Release 使用 `module-v<版本>` 命名空间。`module.prop` 与 `update.json` 仍使用不带标签前缀的内部版本。
 
 当前重启基线和后续任务记录在 [`docs/restart/BASELINE.md`](docs/restart/BASELINE.md)。
 
