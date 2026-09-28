@@ -91,7 +91,7 @@ gh api 'repos/bmax121/KernelPatch/compare/main...dev' --jq '.commits[].message'
 
 ## 与 PatchNest-Module 的关系
 
-`Zhanfg/PatchNest-Module` 通过以下方式使用本仓库的产物:
+`Zhanfg/PatchNest` 的 `module/` 组件 通过以下方式使用本仓库的产物:
 
 | 用途 | 文件 | 引用方式 |
 |---|---|---|
