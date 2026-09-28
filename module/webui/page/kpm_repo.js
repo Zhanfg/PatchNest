@@ -5,14 +5,12 @@ import { setupPullToRefresh } from '../pull-to-refresh.js';
 import { escapeShell } from '../constants.js';
 import { escapeHTML, sanitizeUrl, formatSize } from '../utils.js';
 
-// Default KPM repository URL — points to the standalone PatchNest-Kpms
-// repo on the main branch. The PatchNest-Kpms repo is the
-// independently-versioned KPM catalog for the PatchNest module.
-// Forks of PatchNest-Kpms are encouraged — users can add them
-// as additional subscriptions via the WebUI's "Add Repository"
-// button.
-const DEFAULT_REPO_URL = 'https://raw.githubusercontent.com/Zhanfg/PatchNest-Kpms/main/kpm_repo.json';
+// Default KPM repository URL — points to the canonical PatchNest monorepo.
+// The catalog remains independently versioned inside the kpms/ component.
+// Users can add compatible third-party catalog URLs through the WebUI.
+const DEFAULT_REPO_URL = 'https://raw.githubusercontent.com/Zhanfg/PatchNest/main/kpms/kpm_repo.json';
 const RETIRED_REPO_URLS = new Set([
+    'https://raw.githubusercontent.com/Zhanfg/PatchNest-Kpms/main/kpm_repo.json',
     'https://raw.githubusercontent.com/Zhanfg/Kpm-Repo/main/kpm_repo.json',
     'https://raw.githubusercontent.com/Zhanfg/KPatch-Next-Module/main/kpm_repo.json',
 ]);
