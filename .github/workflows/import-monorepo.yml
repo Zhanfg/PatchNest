@@ -46,22 +46,27 @@ jobs:
             git subtree add --prefix=kpms patchnest-kpms main
           fi
 
-      - name: Mirror provenance refs
+      - name: Record source ref inventory
         run: |
           set -euo pipefail
-          while IFS= read -r ref; do
-            branch=${ref#refs/remotes/patchnest-module/}
-            [ "$branch" = "HEAD" ] && continue
-            git push origin "$ref:refs/heads/provenance/module/$branch"
-          done < <(git for-each-ref --format='%(refname)' refs/remotes/patchnest-module/)
-          git push origin 'refs/tags/provenance/module/*:refs/tags/provenance/module/*' || true
-
-          while IFS= read -r ref; do
-            branch=${ref#refs/remotes/patchnest-kpms/}
-            [ "$branch" = "HEAD" ] && continue
-            git push origin "$ref:refs/heads/provenance/kpms/$branch"
-          done < <(git for-each-ref --format='%(refname)' refs/remotes/patchnest-kpms/)
-          git push origin 'refs/tags/provenance/kpms/*:refs/tags/provenance/kpms/*' || true
+          mkdir -p docs/provenance
+          {
+            echo '# Source ref inventory'
+            echo
+            echo '## PatchNest-Module branches'
+            git for-each-ref --format='- `%(refname:strip=3)` → `%(objectname)`' refs/remotes/patchnest-module/
+            echo
+            echo '## PatchNest-Module tags'
+            git for-each-ref --format='- `%(refname:strip=4)` → `%(objectname)`' refs/tags/provenance/module/
+            echo
+            echo '## PatchNest-Kpms branches'
+            git for-each-ref --format='- `%(refname:strip=3)` → `%(objectname)`' refs/remotes/patchnest-kpms/
+            echo
+            echo '## PatchNest-Kpms tags'
+            git for-each-ref --format='- `%(refname:strip=4)` → `%(objectname)`' refs/tags/provenance/kpms/
+            echo
+            echo '> Source repositories remain intact. Branches that are not merged into their source main remain there until their active work is resolved.'
+          } > docs/provenance/source-refs.md
 
       - name: Record provenance and push
         run: |
