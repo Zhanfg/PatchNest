@@ -138,9 +138,8 @@ if [[ ! -f "module/bin/kp-safemode" && -n "${ANDROID_NDK_HOME:-}" ]]; then
     fi
 fi
 
-# KPM sources and catalog artifacts are maintained independently in:
-# https://github.com/Zhanfg/PatchNest-Kpms
-# PatchNest-Module consumes the generated catalog at runtime and does not
+# KPM sources and catalog artifacts live in the canonical monorepo at kpms/.
+# PatchNest Module consumes the generated catalog at runtime and does not
 # bundle catalog KPM binaries into the module archive.
 
 commit_number=$(git rev-list --count HEAD)
