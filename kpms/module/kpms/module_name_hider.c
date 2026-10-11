@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * module_name_hider.kpm — Hide KP/Magisk/KSU modules from /proc/modules
+ * stealth-module-hider.kpm — Hide KP/Magisk/KSU modules from /proc/modules
  *
  * Duck Detector's Native Root card checks /proc/modules and /proc/kallsyms
  * for known root-framework module names:
@@ -13,14 +13,22 @@
  * module name with a process-local nonce that looks like a generic
  * driver (e.g. "snd_timer", "uvcvideo", "wlan").
  *
- * Build: same as other KPMs
+ * Ported from Linux kernel-module-style prototype to KernelPatch KPM SDK.
  */
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/init.h>
+#include <compiler.h>
+#include <kpmodule.h>
+#include <linux/printk.h>
+#include <common.h>
+#include <kputils.h>
 #include <linux/string.h>
+#include <linux/sched.h>
+#include <linux/jiffies.h>
 
-#define MODNAME "module_name_hider"
+KPM_NAME("stealth-module-hider");
+KPM_VERSION("1.0.0");
+KPM_LICENSE("GPL-2.0");
+KPM_AUTHOR("Kpatch");
+KPM_DESCRIPTION("Hide KP/Magisk/KSU module names from /proc/modules");
 
 static const char *hidden[] = {
     "kp_", "kpmodule", "magisk", "ksunext", "ksu", "apatch",
@@ -32,8 +40,10 @@ static const char *replacements[] = {
     "ext4", "f2fs", "nls_utf8", "input_evtdev", NULL
 };
 
-static int is_hidden(const char *name) {
+static int is_hidden(const char *name)
+{
     int i;
+
     for (i = 0; hidden[i]; i++) {
         if (!strncmp(name, hidden[i], strlen(hidden[i])))
             return 1;
@@ -48,29 +58,40 @@ static int is_hidden(const char *name) {
  * the first N bytes with the replacement string. Reference count,
  * size, etc. remain unchanged (the size mismatch is detectable in
  * principle but no scanner compares them).
+ *
+ * Returns 1 if the line was rewritten, 0 for pass-through.
+ * NOTE: modifies the line buffer in place.
  */
-int kpm_proc_modules_filter(char *line, int len, void *priv) {
+long kpm_proc_modules_filter(char *line, int len, void *priv)
+{
+    char name[64];
     char *sp;
-    int i;
-    if (!line || len <= 0) return 0;
-    sp = strchr(line, ' ');
-    if (!sp) return 0;
+    int nlen, rlen, idx;
+    const char *r;
+    static int seed = 0;
 
-    int nlen = sp - line;
-    char name[64] = {0};
-    if (nlen >= 64) nlen = 63;
+    if (!line || len <= 0)
+        return 0;
+    sp = strchr(line, ' ');
+    if (!sp)
+        return 0;
+
+    nlen = sp - line;
+    if (nlen >= (int)sizeof(name))
+        nlen = sizeof(name) - 1;
     memcpy(name, line, nlen);
     name[nlen] = '\0';
 
-    if (!is_hidden(name)) return 0;
+    if (!is_hidden(name))
+        return 0;
 
-    // Pick a stable replacement per-process (use task pid for now)
-    static int seed = 0;
-    if (!seed) seed = (int)(jiffies & 0xff);
-    int idx = (current->pid + seed) % 9;
-    const char *r = replacements[idx] ? replacements[idx] : "ipv6";
+    // Pick a stable replacement per-process
+    if (!seed)
+        seed = (int)(jiffies & 0xff);
+    idx = (current->pid + seed) % 9;
+    r = replacements[idx] ? replacements[idx] : "ipv6";
 
-    int rlen = strlen(r);
+    rlen = strlen(r);
     if (rlen < nlen) {
         memset(line, ' ', nlen);
         memcpy(line, r, rlen);
@@ -78,19 +99,18 @@ int kpm_proc_modules_filter(char *line, int len, void *priv) {
     }
     return 0;
 }
-EXPORT_SYMBOL(kpm_proc_modules_filter);
 
-static int __init module_hider_init(void) {
-    pr_info("[" MODNAME "] loaded\n");
+static long module_hider_init(const char *args, const char *event, void *__user reserved)
+{
+    pr_info("[stealth-module-hider] loaded\n");
     return 0;
 }
 
-static void __exit module_hider_exit(void) {
-    pr_info("[" MODNAME "] unloaded\n");
+static long module_hider_exit(void *__user reserved)
+{
+    pr_info("[stealth-module-hider] unloaded\n");
+    return 0;
 }
 
-module_init(module_hider_init);
-module_exit(module_hider_exit);
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Kpatch");
-MODULE_DESCRIPTION("Hide KP/Magisk/KSU module names from /proc/modules");
+KPM_INIT(module_hider_init);
+KPM_EXIT(module_hider_exit);

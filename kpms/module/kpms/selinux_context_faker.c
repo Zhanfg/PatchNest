@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * selinux_context_faker.kpm — Report normal SELinux context to apps
+ * stealth-selinux-faker.kpm — Report normal SELinux context to apps
  *
  * Duck Detector's SELinux card does NOT flag enforcing mode (it
  * correctly notes "permission denied can prove enforcing"). However,
@@ -11,52 +11,67 @@
  *   - context "suspicious" tcontext values in AVC denials
  *
  * This KPM intercepts read() on these files and overrides:
- *   - /proc/self/attr/current for our specific daemon uid → "u:r:su:s0"
+ *   - /proc/self/attr/current for root-uid processes → sanitized context
  *   - /sys/fs/selinux/enforce → "1" (always enforcing, never permissive)
- *   - Any access from UID 0 (root) processes that would otherwise
- *     show a suspicious label
- *
- * Build: same as other KPMs
  *
  * Why: some hook frameworks (LSPosed) change context to a custom one.
  * This restores normal-looking contexts when apps query via proc.
+ *
+ * Ported from Linux kernel-module-style prototype to KernelPatch KPM SDK.
  */
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/init.h>
-#include <linux/uaccess.h>
+#include <compiler.h>
+#include <kpmodule.h>
+#include <linux/printk.h>
+#include <common.h>
+#include <kputils.h>
+#include <linux/string.h>
 #include <linux/cred.h>
 
-#define MODNAME "selinux_context_faker"
+KPM_NAME("stealth-selinux-faker");
+KPM_VERSION("1.0.0");
+KPM_LICENSE("GPL-2.0");
+KPM_AUTHOR("Kpatch");
+KPM_DESCRIPTION("Report normal SELinux context to apps, hide root process labels");
 
 #define SELINUX_ENFORCE "/sys/fs/selinux/enforce"
 #define SELINUX_ATTR_CURRENT "/proc/self/attr/current"
-
-static int initialized = 0;
 
 /*
  * Override result of reading /sys/fs/selinux/enforce.
  * Apps always see "1" (enforcing) even if the kernel has a permissive
  * domain loaded by another module.
+ *
+ * Returns 1 if overridden, 0 for pass-through.
  */
-int kpm_enforce_override(char *buf, int *len, void *priv) {
+long kpm_enforce_override(char *buf, int *len, void *priv)
+{
+    if (!buf || !len || *len < 2)
+        return 0;
     buf[0] = '1';
     buf[1] = '\n';
     *len = 2;
-    return 1;  // 1 = overridden, 0 = pass-through
+    return 1;
 }
-EXPORT_SYMBOL(kpm_enforce_override);
 
 /*
  * Override /proc/self/attr/current read.
  * Returns a sanitized SELinux context string for processes running
  * in root contexts that apps should not see.
+ *
+ * Returns 1 if overridden, 0 for pass-through.
  */
-int kpm_attr_current_override(char *buf, int *len, void *priv) {
-    // If caller is root (uid 0), return normal app context
+long kpm_attr_current_override(char *buf, int *len, void *priv)
+{
+    const char *fake = "u:r:magisk:s0";
+    int flen;
+
+    if (!buf || !len)
+        return 0;
+
+    // If caller is root (uid 0), return a normal-looking context
+    // instead of the real (potentially suspicious) one.
     if (current_uid().val == 0) {
-        const char *fake = "u:r:magisk:s0";  // or "u:r:su:s0"
-        int flen = strlen(fake);
+        flen = strlen(fake);
         if (flen < *len) {
             memcpy(buf, fake, flen);
             *len = flen;
@@ -65,21 +80,18 @@ int kpm_attr_current_override(char *buf, int *len, void *priv) {
     }
     return 0;
 }
-EXPORT_SYMBOL(kpm_attr_current_override);
 
-static int __init selinux_faker_init(void) {
-    initialized = 1;
-    pr_info("[" MODNAME "] loaded\n");
+static long selinux_faker_init(const char *args, const char *event, void *__user reserved)
+{
+    pr_info("[stealth-selinux-faker] loaded\n");
     return 0;
 }
 
-static void __exit selinux_faker_exit(void) {
-    initialized = 0;
-    pr_info("[" MODNAME "] unloaded\n");
+static long selinux_faker_exit(void *__user reserved)
+{
+    pr_info("[stealth-selinux-faker] unloaded\n");
+    return 0;
 }
 
-module_init(selinux_faker_init);
-module_exit(selinux_faker_exit);
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Kpatch");
-MODULE_DESCRIPTION("Report normal SELinux context to apps, hide root process labels");
+KPM_INIT(selinux_faker_init);
+KPM_EXIT(selinux_faker_exit);

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * boot_state_spoofer.kpm — Report locked/green bootloader state
+ * stealth-boot-spoofer.kpm — Report locked/green bootloader state
  *
  * Duck Detector's Bootloader card is currently CLEAR (real Pixel/
  * OnePlus devices return "locked, attested"). However, on devices
@@ -16,14 +16,22 @@
  *   - /proc/sys/kernel/bootloader_branded → always 0
  *   - /proc/sysrq-trigger and ro.boot.* prop reads (via KP prop hook)
  *
- * Build: same as other KPMs
+ * Ported from Linux kernel-module-style prototype to KernelPatch KPM SDK.
+ * Filter callbacks are invoked by the KP supervisor's prop/cmdline hooks;
+ * see kp_lsm.c in KernelPatch for the hook installation pattern.
  */
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/init.h>
+#include <compiler.h>
+#include <kpmodule.h>
+#include <linux/printk.h>
+#include <common.h>
+#include <kputils.h>
 #include <linux/string.h>
 
-#define MODNAME "boot_state_spoofer"
+KPM_NAME("stealth-boot-spoofer");
+KPM_VERSION("1.0.0");
+KPM_LICENSE("GPL-2.0");
+KPM_AUTHOR("Kpatch");
+KPM_DESCRIPTION("Report locked/green bootloader state to user-space props");
 
 #define CMDLINE "/proc/cmdline"
 #define BOOTLOADER_BRANDED "/proc/sys/kernel/bootloader_branded"
@@ -32,27 +40,34 @@
  * Rewrite key=value pairs in /proc/cmdline output.
  * The KernelPatch prop hook invokes this callback for every
  * "androidboot.*" key during prop reads.
+ * Returns 1 if the value was rewritten, 0 for pass-through.
  */
-int kpm_prop_filter(const char *key, char *value, int *len, void *priv) {
-    if (!key || !value) return 0;
+long kpm_prop_filter(const char *key, char *value, int *len, void *priv)
+{
+    if (!key || !value || !len)
+        return 0;
 
     if (!strcmp(key, "androidboot.verifiedbootstate")) {
         strncpy(value, "green", *len - 1);
+        value[*len - 1] = '\0';
         *len = 5;
         return 1;
     }
     if (!strcmp(key, "androidboot.flash.locked")) {
         strncpy(value, "1", *len - 1);
+        value[*len - 1] = '\0';
         *len = 1;
         return 1;
     }
     if (!strcmp(key, "androidboot.vbmeta.device_state")) {
         strncpy(value, "locked", *len - 1);
+        value[*len - 1] = '\0';
         *len = 6;
         return 1;
     }
     if (!strcmp(key, "ro.boot.verifiedbootstate")) {
         strncpy(value, "green", *len - 1);
+        value[*len - 1] = '\0';
         *len = 5;
         return 1;
     }
@@ -60,64 +75,71 @@ int kpm_prop_filter(const char *key, char *value, int *len, void *priv) {
         // Truncate or replace with a real Pixel-style digest. Apps that
         // do hex validation will still pass since the length matches.
         const char *fake = "4e7a56f6d84b0000000000000000000000000000000000000000000000000000";
-        int flen = min((int)strlen(fake), *len - 1);
+        int flen = strlen(fake);
+        if (flen > *len - 1)
+            flen = *len - 1;
         memcpy(value, fake, flen);
+        value[flen] = '\0';
         *len = flen;
         return 1;
     }
     return 0;
 }
-EXPORT_SYMBOL(kpm_prop_filter);
 
-int kpm_cmdline_filter(char *buf, int *len, void *priv) {
-    if (!buf || !len || *len <= 0) return 0;
+/*
+ * Rewrite androidboot.* pairs in /proc/cmdline output.
+ * Returns 1 if the buffer was modified, 0 for pass-through.
+ */
+long kpm_cmdline_filter(char *buf, int *len, void *priv)
+{
+    char *p, *eq, *sp;
+    int old_len;
+
+    if (!buf || !len || *len <= 0)
+        return 0;
+
     // Replace any "androidboot.verifiedbootstate=*" with =green
-    // Replace any "androidboot.flash.locked=0" with =1
-    char *p = strstr(buf, "androidboot.verifiedbootstate=");
+    p = strstr(buf, "androidboot.verifiedbootstate=");
     if (p) {
-        char *eq = p + strlen("androidboot.verifiedbootstate=");
-        char *sp = strchr(eq, ' ');
+        eq = p + strlen("androidboot.verifiedbootstate=");
+        sp = strchr(eq, ' ');
         if (sp) {
-            int old_len = sp - eq;
+            old_len = sp - eq;
             memmove(eq, "green", 5);
-            // P0-9: previous condition `sp - eq - 5 > 0` skipped the
-            // tail-shift whenever the old value was shorter than
-            // "green" (e.g. "red" = 3, "blue" = 4, "yellow" = 6) —
-            // which is *exactly* the boot states we want to spoof.
-            // Result: cmdline ended up as
-            //   "androidboot.verifiedbootstate=greenest"
-            // because `sp` still pointed at the original space,
-            // `eq + 5` now sat on the 'e'/'n' tail of "green", and
-            // we never copied " rest" over. Use `>= 0` so the tail
-            // is always moved, including the equal-length case.
+            // NOTE: `old_len - 5 >= 0` (not `> 0`) so the tail is
+            // always shifted, including the equal-length case.
+            // Otherwise "red"/"blue"/"yellow" values produce
+            // "greenest"-style corruption.
             if (old_len - 5 >= 0)
                 memmove(eq + 5, sp, strlen(sp) + 1);
         }
         *len = strlen(buf);
         return 1;
     }
+
+    // Replace any "androidboot.flash.locked=0" with =1
     p = strstr(buf, "androidboot.flash.locked=");
     if (p) {
-        char *eq = p + strlen("androidboot.flash.locked=");
-        if (*eq == '0') *eq = '1';
+        eq = p + strlen("androidboot.flash.locked=");
+        if (*eq == '0')
+            *eq = '1';
         *len = strlen(buf);
         return 1;
     }
     return 0;
 }
-EXPORT_SYMBOL(kpm_cmdline_filter);
 
-static int __init boot_spoofer_init(void) {
-    pr_info("[" MODNAME "] loaded\n");
+static long boot_spoofer_init(const char *args, const char *event, void *__user reserved)
+{
+    pr_info("[stealth-boot-spoofer] loaded\n");
     return 0;
 }
 
-static void __exit boot_spoofer_exit(void) {
-    pr_info("[" MODNAME "] unloaded\n");
+static long boot_spoofer_exit(void *__user reserved)
+{
+    pr_info("[stealth-boot-spoofer] unloaded\n");
+    return 0;
 }
 
-module_init(boot_spoofer_init);
-module_exit(boot_spoofer_exit);
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Kpatch");
-MODULE_DESCRIPTION("Report locked/green bootloader state to user-space props");
+KPM_INIT(boot_spoofer_init);
+KPM_EXIT(boot_spoofer_exit);
