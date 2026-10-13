@@ -36,7 +36,7 @@ kpm_verify__hex_to_bin() {
         _esc="${_esc}\\0${_oct}"
     done
     printf '%b' "$_esc" > "$_out" || return 1
-    [ "$(wc -c < "$_out" | tr -d ' ')" -eq $((${#_esc} / 4)) ] || return 1
+    [ "$(wc -c < "$_out" | tr -d ' ')" -eq $((${#_esc} / 5)) ] || return 1
     return 0
 }
 
