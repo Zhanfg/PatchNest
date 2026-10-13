@@ -60,7 +60,10 @@ The journal is best effort; it cannot recover a boot that crashes before `/data`
 - Loading `.ko` / `.o` via the freestanding KPM runtime is **not** equivalent to `insmod`; only known compatible objects may be treated as KPM.
 - The patched binary must match kernel image/architecture/KMI/CFI constraints; none of these are automatically proven by this shell policy.
 - Static embedded KPMs are outside the `service.sh` auto-load policy; enforcing A-grade stability requires separate in-kernel policy.
-- Existing `module/module/patch/boot_patch.sh` still needs a verified offline backup/preflight/restore audit.
+- `module/module/patch/boot_patch.sh` now verifies a fresh boot-image backup (unpack + SHA256 byte comparison) and validates the repacked image before direct flash. It refuses device flashing when no fresh verified backup exists. This is an intentionally **breaking safety restriction** for repeat patching; offline image export remains possible. Repeated patching needs a reviewed provenance-aware recovery path before release.
+- `boot_unpatch.sh` remains a separate recovery component that still needs a matching-slot and hash-enforced restoration audit; do not infer that all recovery risks are solved.
+- Embedded KPM candidates must pass bounded ELF format checks and `kptools -l`; missing tools or unsupported objects are rejected instead of being merely warned.
+- Device-specific partitions, AVB, slot identity, running root chain and KPM compatibility need independent hardware verification.
 - Before any stable build: test the signature verifier on actual Android `openssl`; test strict/warn/early/off; force process termination at each journal stage; test KPM crash + reboot fallback; validate image flash rollback on both slots.
 
 ## Current evidence
