@@ -43,7 +43,11 @@ get_prop() {
 #     KPM_SIGNATURE_POLICY=warn
 # or toggled from the WebUI Settings page.
 KPN_CONFIG="$PNDIR/config"
-KPM_SIGNATURE_POLICY=off
+KPM_SIGNATURE_POLICY=strict
+# B / patched profile is flexible by explicit opt-in, not implicit early
+# execution. Set KPM_AUTOLOAD_POLICY=early for legacy behavior, or off to
+# keep dynamic CLI/WebUI loading only.
+KPM_AUTOLOAD_POLICY=postboot
 if [ -f "$KPN_CONFIG" ]; then
     # Tolerate comments, blank lines, and `export ` prefixes.
     _val=$(grep -E '^[[:space:]]*(export[[:space:]]+)?KPM_SIGNATURE_POLICY[[:space:]]*=' \
@@ -52,7 +56,13 @@ if [ -f "$KPN_CONFIG" ]; then
         off|warn|strict) KPM_SIGNATURE_POLICY="$_val" ;;
         0|false)         KPM_SIGNATURE_POLICY=off ;;
         1|true|yes|on)   KPM_SIGNATURE_POLICY=strict ;;
-        *)               KPM_SIGNATURE_POLICY=off ;;
+        *)               KPM_SIGNATURE_POLICY=strict ;;
+    esac
+    _autoload=$(grep -E '^[[:space:]]*(export[[:space:]]+)?KPM_AUTOLOAD_POLICY[[:space:]]*=' \
+        "$KPN_CONFIG" 2>/dev/null | tail -1 | sed -E 's/^[^=]*=//' | tr -d '"\r\n' | tr 'A-Z' 'a-z')
+    case "$_autoload" in
+        postboot|early|off) KPM_AUTOLOAD_POLICY="$_autoload" ;;
+        *) KPM_AUTOLOAD_POLICY=postboot ;;
     esac
 fi
 
@@ -77,6 +87,7 @@ echo "=== $(date) service.sh started ===" > "$LOG"
 echo "[$(date)] MODDIR=$MODDIR" >> "$LOG"
 echo "[$(date)] PATH=$PATH" >> "$LOG"
 echo "[$(date)] KPM_SIGNATURE_POLICY=$KPM_SIGNATURE_POLICY" >> "$LOG"
+echo "[$(date)] KPM_AUTOLOAD_POLICY=$KPM_AUTOLOAD_POLICY" >> "$LOG"
 
 # Detect root manager
 ROOT_MGR="unknown"
@@ -125,18 +136,61 @@ if ! kpatch hello >/dev/null 2>&1; then
 fi
 echo "[$(date)] kpatch hello OK" >> "$LOG"
 
-# Bootloop Auto-Recovery: healthy boot detected — reset the counter
-# and clear any auto-recovery markers so we don't trigger unpatch.
-echo "0" > "$PNDIR/boot_count" 2>/dev/null
-rm -f "$PNDIR/autorecovery_active" "$PNDIR/auto_unpatch_requested"
+# Persistent KPM transaction marker: if last boot died while KPMs were
+# being activated, do not automatically reactivate them on the next boot.
+# The user can inspect $PNDIR/service.log and remove the marker to opt in.
+KPM_PENDING="$PNDIR/kpm_session_pending"
+KPM_AUTOLOAD_BLOCKED=0
+KPM_SESSION_STARTED=0
+if [ -e "$KPM_PENDING" ]; then
+    KPM_AUTOLOAD_BLOCKED=1
+    echo "[$(date)] SAFE MODE: unfinished KPM activation from prior boot; auto-load blocked" >> "$LOG"
+fi
+if [ "$KPM_AUTOLOAD_POLICY" = "off" ]; then
+    KPM_AUTOLOAD_BLOCKED=1
+    echo "[$(date)] KPM auto-load disabled by configuration" >> "$LOG"
+fi
 
+if [ "$KPM_AUTOLOAD_POLICY" = "postboot" ]; then
+    # Deliver the early event to already-embedded modules at the normal
+    # phase; dynamic KPMs loaded later receive BOOT_COMPLETED instead.
+    kpatch event "POST_FS_DATA" "" "" 2>/dev/null || true
+    if [ "$KPM_AUTOLOAD_BLOCKED" -eq 0 ]; then
+        i=0
+        while [ "$(getprop sys.boot_completed)" != "1" ] && [ "$i" -lt 300 ]; do
+            sleep 1
+            i=$((i + 1))
+        done
+        if [ "$(getprop sys.boot_completed)" != "1" ]; then
+            KPM_AUTOLOAD_BLOCKED=1
+            echo "[$(date)] Boot not confirmed; failing closed without KPM auto-load" >> "$LOG"
+        fi
+    fi
+fi
 # Safe KPM load
 # Use a literal-glob test: when the directory is empty, the shell returns
 # the pattern itself unchanged. The [ -e ] check then correctly skips it,
 # avoiding the bug where the old [ -s ] guard would test the wrong path.
+if [ "$KPM_AUTOLOAD_BLOCKED" -eq 0 ]; then
 for kpm in "$KPM_DIR"/*.kpm "$KPM_DIR"/*.ko "$KPM_DIR"/*.o; do
     [ -e "$kpm" ] || continue
     [ -s "$kpm" ] || continue
+    # Never attempt to load unvalidated empty files and avoid kernel OOM.
+    _bytes=$(wc -c < "$kpm" 2>/dev/null | tr -d ' ')
+    case "$_bytes" in *[!0-9]*|"") continue ;; esac
+    if [ "$_bytes" -gt 16777216 ]; then
+        echo "[$(date)] REJECTED oversized KPM: $(basename "$kpm")" >> "$LOG"
+        continue
+    fi
+    # Journal BEFORE the first load. If the kernel crashes mid-load
+    # this file survives reboot and prevents repeated auto-load.
+    if [ "$KPM_SESSION_STARTED" -eq 0 ]; then
+        printf 'pending: %s\n' "$(date)" > "$KPM_PENDING" || {
+            echo "[$(date)] ERROR: cannot write KPM journal; fail closed" >> "$LOG"
+            break
+        }
+        KPM_SESSION_STARTED=1
+    fi
     mod_basename=$(basename "$kpm" | sed 's/\.\(kpm\|ko\|o\)$//')
     args=""
     if [ -f "$KPM_EVENT_DIR/${mod_basename}.args" ]; then
@@ -181,6 +235,7 @@ for kpm in "$KPM_DIR"/*.kpm "$KPM_DIR"/*.ko "$KPM_DIR"/*.o; do
         echo "[$(date)] Loaded: $(basename "$kpm") args=[$args]" >> "$LOG"
     fi
 done
+fi
 
 # Rehook
 if [ -n "$REHOOK" ]; then
@@ -198,7 +253,9 @@ dispatch_event() {
     kpatch event "$1" "" "" 2>/dev/null
 }
 
-dispatch_event "POST_FS_DATA"
+if [ "$KPM_AUTOLOAD_POLICY" != "postboot" ]; then
+    dispatch_event "POST_FS_DATA"
+fi
 
 # Wait for boot completion (with 5 min timeout to avoid infinite loop on broken ROMs)
 wait_count=0
@@ -206,12 +263,24 @@ until [ "$(getprop sys.boot_completed)" = "1" ]; do
     sleep 1
     wait_count=$((wait_count + 1))
     if [ "$wait_count" -ge 300 ]; then
-        echo "[$(date)] WARN: boot_completed timeout, continuing anyway" >> "$LOG"
+        echo "[$(date)] WARN: boot_completed timeout; preserving recovery state" >> "$LOG"
         break
     fi
 done
 
-dispatch_event "BOOT_COMPLETED"
+if [ "$(getprop sys.boot_completed)" = "1" ]; then
+    dispatch_event "BOOT_COMPLETED"
+    # A one-time observation window, not a polling daemon. If the device
+    # reboots/crashes in the next 30 seconds the journal remains in place.
+    if [ "$KPM_SESSION_STARTED" -eq 1 ]; then
+        sleep 30
+        rm -f "$KPM_PENDING"
+    fi
+    echo 0 > "$PNDIR/boot_count" 2>/dev/null || true
+    rm -f "$PNDIR/autorecovery_active" "$PNDIR/auto_unpatch_requested"
+else
+    echo "[$(date)] Boot not confirmed; no recovery counter reset" >> "$LOG"
+fi
 
 # Apply exclusion config
 # Use a temp file (not subshell pipeline) so we keep state and can quote safely.
