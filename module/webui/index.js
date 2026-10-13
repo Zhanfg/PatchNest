@@ -1,6 +1,7 @@
 import '@material/web/all.js';
 import { applyStoredTheme } from './theme.js';
 import { detectEnvironment, resetEnvironment } from './ksu.js';
+import { queryRuntimeStatus } from './runtime-status.js';
 import { openModuleConfigDialog } from './module-config.js';
 
 // Apply theme as early as possible — before any UI renders — so the user
@@ -126,6 +127,25 @@ export async function initInfo() {
             } else {
                 ksuEl.closest('.info')?.classList.add('hidden');
             }
+        }
+    } catch (_) {}
+
+    // Read-only capability discovery: distinguish kernel-integrated,
+    // legacy patched and missing runtimes without inferring KPM support.
+    try {
+        const runtime = await queryRuntimeStatus();
+        const el = document.getElementById('ksu-info');
+        if (el && runtime.backend !== 'none') {
+            const runtimeLabel = runtime.backend === 'native'
+                ? (runtime.canLoadKpm ? 'PatchNest native · KPM ready'
+                                      : 'PatchNest native · development')
+                : (runtime.backend === 'patched-legacy'
+                    ? 'PatchNest patched · legacy ABI'
+                    : 'PatchNest native · unverified');
+            el.textContent = el.textContent
+                ? el.textContent + ' · ' + runtimeLabel
+                : runtimeLabel;
+            el.closest('.info')?.classList.remove('hidden');
         }
     } catch (_) {}
 }
