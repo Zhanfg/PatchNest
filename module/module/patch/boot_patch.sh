@@ -356,20 +356,28 @@ for arg in "$@"; do
                 prev_flag="$arg"
                 continue
             fi
-            # Check ELF magic (7f 45 4c 46)
-            magic=$(xxd -l 4 -p "$kpm_file" 2>/dev/null)
+            # Use dd+od (Android toybox), not xxd which may be absent.
+            # Full parser validation still happens inside kptools.
+            kpm_size=$(wc -c < "$kpm_file" | tr -d ' ')
+            case "$kpm_size" in
+                *[!0-9]*|"") validate_failed=1; continue ;;
+            esac
+            if [ "$kpm_size" -lt 64 ] || [ "$kpm_size" -gt 16777216 ]; then
+                echo "! Embedded module size invalid: $kpm_file"
+                validate_failed=1
+                continue
+            fi
+            magic=$(dd if="$kpm_file" bs=1 count=4 2>/dev/null | od -An -tx1 | tr -d ' \n')
             if [ "$magic" != "7f454c46" ]; then
                 echo "! Invalid ELF: $kpm_file (magic=$magic)"
                 validate_failed=1
-                prev_flag="$arg"
                 continue
             fi
-            # Check aarch64 (e_machine = 0xB7 at offset 18, little-endian)
-            machine=$(xxd -s 18 -l 2 -e "$kpm_file" 2>/dev/null | awk '{print $2}')
-            if [ "$machine" != "000000b7" ]; then
+            # ELF64/AArch64 e_machine little-endian 0xb7 0x00 at offset 18.
+            machine=$(dd if="$kpm_file" bs=1 skip=18 count=2 2>/dev/null | od -An -tx1 | tr -d ' \n')
+            if [ "$machine" != "b700" ]; then
                 echo "! Not aarch64: $kpm_file"
                 validate_failed=1
-                prev_flag="$arg"
                 continue
             fi
             # Embedded KPMs run inside the kernel during boot. A parser
