@@ -234,7 +234,8 @@ latest_manifest() {
 # to the final manifest after magiskboot validates the backup.
 # ============================================================
 mkdir -p "$BACKUP_DIR"
-TMP_DATE=$(date +%y%m%d%H%M)
+# Include seconds and PID: multiple patch attempts must not overwrite backups.
+TMP_DATE=$(date +%Y%m%d_%H%M%S)_$
 TMP_BACKUP="$BACKUP_DIR/boot_backup_${TMP_DATE}.img"
 TMP_MANIFEST="$BACKUP_DIR/boot_backup_${TMP_DATE}.json"
 
@@ -310,6 +311,13 @@ if [ "$SHOULD_BACKUP" -eq 1 ]; then
         exit 1
     fi
     rm -rf "$VALIDATE_TMP"
+    # Verify byte-for-byte copy before trusting this backup as recovery.
+    if ! command -v sha256sum >/dev/null 2>&1 ||
+       [ "$(sha256sum "$BOOTIMAGE" | awk '{print $1}')" != "$(sha256sum "$TMP_BACKUP" | awk '{print $1}')" ]; then
+        >&2 echo "! Backup hash mismatch or SHA256 tool missing; refusing to patch."
+        rm -f "$TMP_BACKUP" "$TMP_MANIFEST"
+        exit 1
+    fi
     echo "- Backup verified."
 
     # ============================================================
@@ -364,13 +372,14 @@ for arg in "$@"; do
                 prev_flag="$arg"
                 continue
             fi
-            # Try kptools validation if available
+            # Embedded KPMs run inside the kernel during boot. A parser
+            # failure is not a warning: abort rather than risking a loop.
             if kptools -l -M "$kpm_file" >/dev/null 2>&1; then
                 kpm_name=$(kptools -l -M "$kpm_file" 2>/dev/null | grep "^name=" | cut -d= -f2)
                 echo "  ✓ Valid: ${kpm_name:-$kpm_file}"
             else
-                # kptools -l might not work for all formats, just warn
-                echo "  ⚠ Cannot verify with kptools: $kpm_file (proceeding)"
+                echo "! Embedded KPM validation failed: $kpm_file"
+                validate_failed=1
             fi
             ;;
     esac
@@ -386,10 +395,9 @@ fi
 
 echo "- Patching kernel"
 
-set -x
+# Do not enable set -x here: options may include privileged credentials.
 kptools -p -i kernel.ori -k kpimg -o kernel "$@"
 patch_rc=$?
-set +x
 
 if [ $patch_rc -ne 0 ]; then
   >&2 echo "! Patch kernel error: $patch_rc"
@@ -402,23 +410,38 @@ if ! magiskboot repack "$BOOTIMAGE" >/dev/null 2>&1; then
   exit 1
 fi
 
-if [ "$FLASH_TO_DEVICE" = "true" ]; then
-  # flash
-  if [ -b "$BOOTIMAGE" ] || [ -c "$BOOTIMAGE" ]; then
-    if [ -f "new-boot.img" ]; then
-      echo "- Flashing new boot image"
-      flash_image new-boot.img "$BOOTIMAGE"
-      if [ $? -ne 0 ]; then
-        >&2 echo "! Flash error"
-        save_image_to_storage "new-boot.img"
-        exit 1
-      fi
-    else
-      >&2 echo "! new-boot.img missing — refusing to flash"
-      exit 1
-    fi
-  fi
+# Preflight the *produced* image before any block-device write.
+[ -s "new-boot.img" ] || {
+  >&2 echo "! Patched image missing or empty — refusing to continue"
+  exit 1
+}
+VERIFY_OUT=$(mktemp -d) || exit 1
+cp "new-boot.img" "$VERIFY_OUT/candidate.img" || exit 1
+if ! (cd "$VERIFY_OUT" && magiskboot unpack candidate.img >/dev/null 2>&1); then
+  rm -rf "$VERIFY_OUT"
+  >&2 echo "! Patched image does not unpack — refusing to flash/export"
+  exit 1
+fi
+rm -rf "$VERIFY_OUT"
 
+if [ "$FLASH_TO_DEVICE" = "true" ]; then
+  # A verified original backup from *this* patching session is required.
+  # Existing backups may be stale after an OTA / other root flash.
+  if [ "$SHOULD_BACKUP" -ne 1 ] || [ ! -s "$TMP_BACKUP" ]; then
+    >&2 echo "! No verified fresh boot backup: refusing direct flash."
+    >&2 echo "! Use offline image export and independently verify recovery."
+    exit 1
+  fi
+  if [ ! -b "$BOOTIMAGE" ] && [ ! -c "$BOOTIMAGE" ]; then
+    >&2 echo "! Target is not a block/character device: refusing flash."
+    exit 1
+  fi
+  echo "- Flashing validated boot image"
+  if ! flash_image new-boot.img "$BOOTIMAGE"; then
+    >&2 echo "! Flash failed"
+    save_image_to_storage "new-boot.img"
+    exit 1
+  fi
   echo "- Successfully Flashed!"
 else
   save_image_to_storage "new-boot.img"
