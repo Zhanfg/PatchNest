@@ -66,6 +66,22 @@ The journal is best effort; it cannot recover a boot that crashes before `/data`
 - Device-specific partitions, AVB, slot identity, running root chain and KPM compatibility need independent hardware verification.
 - Before any stable build: test the signature verifier on actual Android `openssl`; test strict/warn/early/off; force process termination at each journal stage; test KPM crash + reboot fallback; validate image flash rollback on both slots.
 
+## Verified rollback provenance (new in this branch)
+
+A direct recovery write **must** be explicitly selected with `PN_FLASH_RECOVERY=1` and must restore a verified original backup, never a stale `new-boot.img`.
+
+During patching, the backup manifest now includes:
+- `target_path`: canonical target block path
+- `target_slot`: resolved from actual `/dev/block/by-name/boot_a` or `boot_b`, not the currently booted slot
+- `backup_sha256`: digest of the copied and validated original boot image
+- `backup_verified: true` only after the file is unpacked and digest checked
+
+`patch/backup_guard.sh` selects the newest backup **that passes all checks**: original digest matches, manifest verified, canonical partition matches and A/B slot matches. Unknown-slot or legacy unverified backups are explicitly rejected for direct automatic restoration. `boot_unpatch.sh` performs offline-only unpatch/export by default and refuses to reuse a pre-existing `new-boot.img`. A direct recovery write requires a real block device and a structurally valid matching original image.
+
+The check is intentionally strict. If a device does not expose reliable `boot_a/boot_b` identity, offline export may still be used, but no automatic restore should be attempted. Matching slot/hash is **not** a substitute for verifying that a backup belongs to the correct ROM generation after an OTA.
+
+`module/tests/backup-guard-smoke.sh` tests wrong slot, wrong path, invalid digest, unverified manifest, missing manifest and symlinked backup in both dash and bash. These are host checks only and do not flash any partition.
+
 ## Current evidence
 
 `module/tests/kpm-signature-smoke.sh` validates a public known-good Ed25519 test vector and four failure cases with `dash` and `bash`. The dedicated CI workflow runs these tests and shell syntax checks. CI passing does **not** imply working kernel patching or Android hardware safety.
