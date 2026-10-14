@@ -9,6 +9,8 @@ on:
       - 'module/module/kpm_verify.sh'
       - 'module/module/service.sh'
       - 'module/tests/kpm-signature-smoke.sh'
+      - 'module/module/patch/**'
+      - 'module/tests/backup-guard-smoke.sh'
       - '.github/workflows/patchnest-patched-security.yml'
   workflow_dispatch:
 
@@ -28,3 +30,8 @@ jobs:
           bash -n module/module/kpm_verify.sh
           dash module/tests/kpm-signature-smoke.sh
           bash module/tests/kpm-signature-smoke.sh
+          dash -n module/module/patch/backup_guard.sh
+          dash -n module/module/patch/boot_patch.sh
+          dash -n module/module/patch/boot_unpatch.sh
+          dash module/tests/backup-guard-smoke.sh
+          bash module/tests/backup-guard-smoke.sh
