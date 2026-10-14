@@ -138,6 +138,18 @@ detect_root_chain() {
     fi
     [ -z "$ORIG_SHA" ] && ORIG_SHA="null"
 
+    # Record the exact destination and slot. Resolve symlinks so a
+    # later restore cannot match a different /dev/block/by-name alias.
+    local TARGET_PATH TARGET_SLOT
+    TARGET_PATH=$(readlink -f "$BOOT_FILE" 2>/dev/null)
+    [ -n "$TARGET_PATH" ] || TARGET_PATH="unknown"
+    TARGET_SLOT=$(getprop ro.boot.slot_suffix 2>/dev/null)
+    case "$BOOT_FILE" in
+        *_a) TARGET_SLOT=_a ;;
+        *_b) TARGET_SLOT=_b ;;
+    esac
+    case "$TARGET_SLOT" in _a|_b) ;; *) TARGET_SLOT=unknown ;; esac
+
     # 8. ISO-ish timestamp (UTC, no colons — POSIX-safe filename suffix).
     local TAKEN_AT
     TAKEN_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -178,6 +190,9 @@ detect_root_chain() {
   "kpimg_size": $KPIMG_SIZE,
   "kernel_cmdline_hint": "$SAFE_HINT",
   "original_sha256": "$SAFE_SHA",
+  "target_path": "$(json_escape "$TARGET_PATH")",
+  "target_slot": "$TARGET_SLOT",
+  "backup_sha256": "null",
   "backup_verified": false
 }
 EOF
@@ -318,6 +333,14 @@ if [ "$SHOULD_BACKUP" -eq 1 ]; then
         rm -f "$TMP_BACKUP" "$TMP_MANIFEST"
         exit 1
     fi
+    # Store the hash of the actual verified backup file, not an assumed
+    # copy of the current partition. This is mandatory for restoration.
+    VERIFIED_BACKUP_SHA=$(sha256sum "$TMP_BACKUP" | awk '{print $1}')
+    case "$VERIFIED_BACKUP_SHA" in *[!0-9a-f]*|"") exit 1 ;; esac
+    [ "${#VERIFIED_BACKUP_SHA}" -eq 64 ] || exit 1
+    sed "s/\"backup_sha256\": \"null\"/\"backup_sha256\": \"$VERIFIED_BACKUP_SHA\"/" \
+        "$TMP_MANIFEST" > "$TMP_MANIFEST.hash" || exit 1
+    mv "$TMP_MANIFEST.hash" "$TMP_MANIFEST" || exit 1
     echo "- Backup verified."
 
     # ============================================================
