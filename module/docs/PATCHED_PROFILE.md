@@ -74,11 +74,12 @@ During patching, the backup manifest now includes:
 - `target_path`: canonical target block path
 - `target_slot`: resolved from actual `/dev/block/by-name/boot_a` or `boot_b`, not the currently booted slot
 - `backup_sha256`: digest of the copied and validated original boot image
+- `rom_fingerprint`: ROM build fingerprint recorded at backup time; a mismatch prevents auto-restore across OTA or changed ROM images
 - `backup_verified: true` only after the file is unpacked and digest checked
 
 `patch/backup_guard.sh` selects the newest backup **that passes all checks**: original digest matches, manifest verified, canonical partition matches and A/B slot matches. Unknown-slot or legacy unverified backups are explicitly rejected for direct automatic restoration. `boot_unpatch.sh` performs offline-only unpatch/export by default and refuses to reuse a pre-existing `new-boot.img`. A direct recovery write requires a real block device and a structurally valid matching original image.
 
-The check is intentionally strict. If a device does not expose reliable `boot_a/boot_b` identity, offline export may still be used, but no automatic restore should be attempted. Matching slot/hash is **not** a substitute for verifying that a backup belongs to the correct ROM generation after an OTA.
+The check is intentionally strict. If a device does not expose reliable `boot_a/boot_b` identity, offline export may still be used, but no automatic restore should be attempted. Matching slot/hash and ROM fingerprint reduces accidental cross-OTA restore, but is **not** a cryptographic guarantee of full firmware compatibility (e.g. vendor/DTBO changes).
 
 `module/tests/backup-guard-smoke.sh` tests wrong slot, wrong path, invalid digest, unverified manifest, missing manifest and symlinked backup in both dash and bash. These are host checks only and do not flash any partition.
 
