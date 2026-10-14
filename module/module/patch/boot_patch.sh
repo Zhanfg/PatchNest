@@ -138,6 +138,33 @@ detect_root_chain() {
     fi
     [ -z "$ORIG_SHA" ] && ORIG_SHA="null"
 
+    # Record the exact destination and slot. Resolve symlinks so a
+    # later restore cannot match a different /dev/block/by-name alias.
+    local TARGET_PATH TARGET_SLOT
+    TARGET_PATH=$(readlink -f "$BOOT_FILE" 2>/dev/null)
+    [ -n "$TARGET_PATH" ] || TARGET_PATH="unknown"
+    # Never infer the target slot from the *running* slot when patching
+    # an OTA's inactive slot. Resolve known boot_a/boot_b aliases.
+    TARGET_SLOT=unknown
+    for suffix in _a _b; do
+        byname="/dev/block/by-name/boot$suffix"
+        if [ -e "$byname" ] &&
+           [ "$(readlink -f "$byname" 2>/dev/null)" = "$TARGET_PATH" ]; then
+            TARGET_SLOT=$suffix
+        fi
+    done
+    case "$BOOT_FILE" in
+        */boot_a) TARGET_SLOT=_a ;;
+        */boot_b) TARGET_SLOT=_b ;;
+    esac
+
+    # A backup from a different ROM generation may match the physical
+    # partition yet still be incompatible after OTA. Pin a conservative
+    # fingerprint; missing property means no automatic restoration.
+    local ROM_FINGERPRINT
+    ROM_FINGERPRINT=$(getprop ro.build.fingerprint 2>/dev/null)
+    [ -n "$ROM_FINGERPRINT" ] || ROM_FINGERPRINT=unknown
+
     # 8. ISO-ish timestamp (UTC, no colons — POSIX-safe filename suffix).
     local TAKEN_AT
     TAKEN_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -178,6 +205,10 @@ detect_root_chain() {
   "kpimg_size": $KPIMG_SIZE,
   "kernel_cmdline_hint": "$SAFE_HINT",
   "original_sha256": "$SAFE_SHA",
+  "target_path": "$(json_escape "$TARGET_PATH")",
+  "target_slot": "$TARGET_SLOT",
+  "rom_fingerprint": "$(json_escape "$ROM_FINGERPRINT")",
+  "backup_sha256": "null",
   "backup_verified": false
 }
 EOF
@@ -234,7 +265,8 @@ latest_manifest() {
 # to the final manifest after magiskboot validates the backup.
 # ============================================================
 mkdir -p "$BACKUP_DIR"
-TMP_DATE=$(date +%y%m%d%H%M)
+# Include seconds and PID: multiple patch attempts must not overwrite backups.
+TMP_DATE=$(date +%Y%m%d_%H%M%S)_$
 TMP_BACKUP="$BACKUP_DIR/boot_backup_${TMP_DATE}.img"
 TMP_MANIFEST="$BACKUP_DIR/boot_backup_${TMP_DATE}.json"
 
@@ -310,6 +342,21 @@ if [ "$SHOULD_BACKUP" -eq 1 ]; then
         exit 1
     fi
     rm -rf "$VALIDATE_TMP"
+    # Verify byte-for-byte copy before trusting this backup as recovery.
+    if ! command -v sha256sum >/dev/null 2>&1 ||
+       [ "$(sha256sum "$BOOTIMAGE" | awk '{print $1}')" != "$(sha256sum "$TMP_BACKUP" | awk '{print $1}')" ]; then
+        >&2 echo "! Backup hash mismatch or SHA256 tool missing; refusing to patch."
+        rm -f "$TMP_BACKUP" "$TMP_MANIFEST"
+        exit 1
+    fi
+    # Store the hash of the actual verified backup file, not an assumed
+    # copy of the current partition. This is mandatory for restoration.
+    VERIFIED_BACKUP_SHA=$(sha256sum "$TMP_BACKUP" | awk '{print $1}')
+    case "$VERIFIED_BACKUP_SHA" in *[!0-9a-f]*|"") exit 1 ;; esac
+    [ "${#VERIFIED_BACKUP_SHA}" -eq 64 ] || exit 1
+    sed "s/\"backup_sha256\": \"null\"/\"backup_sha256\": \"$VERIFIED_BACKUP_SHA\"/" \
+        "$TMP_MANIFEST" > "$TMP_MANIFEST.hash" || exit 1
+    mv "$TMP_MANIFEST.hash" "$TMP_MANIFEST" || exit 1
     echo "- Backup verified."
 
     # ============================================================
@@ -348,29 +395,38 @@ for arg in "$@"; do
                 prev_flag="$arg"
                 continue
             fi
-            # Check ELF magic (7f 45 4c 46)
-            magic=$(xxd -l 4 -p "$kpm_file" 2>/dev/null)
+            # Use dd+od (Android toybox), not xxd which may be absent.
+            # Full parser validation still happens inside kptools.
+            kpm_size=$(wc -c < "$kpm_file" | tr -d ' ')
+            case "$kpm_size" in
+                *[!0-9]*|"") validate_failed=1; continue ;;
+            esac
+            if [ "$kpm_size" -lt 64 ] || [ "$kpm_size" -gt 16777216 ]; then
+                echo "! Embedded module size invalid: $kpm_file"
+                validate_failed=1
+                continue
+            fi
+            magic=$(dd if="$kpm_file" bs=1 count=4 2>/dev/null | od -An -tx1 | tr -d ' \n')
             if [ "$magic" != "7f454c46" ]; then
                 echo "! Invalid ELF: $kpm_file (magic=$magic)"
                 validate_failed=1
-                prev_flag="$arg"
                 continue
             fi
-            # Check aarch64 (e_machine = 0xB7 at offset 18, little-endian)
-            machine=$(xxd -s 18 -l 2 -e "$kpm_file" 2>/dev/null | awk '{print $2}')
-            if [ "$machine" != "000000b7" ]; then
+            # ELF64/AArch64 e_machine little-endian 0xb7 0x00 at offset 18.
+            machine=$(dd if="$kpm_file" bs=1 skip=18 count=2 2>/dev/null | od -An -tx1 | tr -d ' \n')
+            if [ "$machine" != "b700" ]; then
                 echo "! Not aarch64: $kpm_file"
                 validate_failed=1
-                prev_flag="$arg"
                 continue
             fi
-            # Try kptools validation if available
+            # Embedded KPMs run inside the kernel during boot. A parser
+            # failure is not a warning: abort rather than risking a loop.
             if kptools -l -M "$kpm_file" >/dev/null 2>&1; then
                 kpm_name=$(kptools -l -M "$kpm_file" 2>/dev/null | grep "^name=" | cut -d= -f2)
                 echo "  ✓ Valid: ${kpm_name:-$kpm_file}"
             else
-                # kptools -l might not work for all formats, just warn
-                echo "  ⚠ Cannot verify with kptools: $kpm_file (proceeding)"
+                echo "! Embedded KPM validation failed: $kpm_file"
+                validate_failed=1
             fi
             ;;
     esac
@@ -386,10 +442,9 @@ fi
 
 echo "- Patching kernel"
 
-set -x
+# Do not enable set -x here: options may include privileged credentials.
 kptools -p -i kernel.ori -k kpimg -o kernel "$@"
 patch_rc=$?
-set +x
 
 if [ $patch_rc -ne 0 ]; then
   >&2 echo "! Patch kernel error: $patch_rc"
@@ -402,23 +457,38 @@ if ! magiskboot repack "$BOOTIMAGE" >/dev/null 2>&1; then
   exit 1
 fi
 
-if [ "$FLASH_TO_DEVICE" = "true" ]; then
-  # flash
-  if [ -b "$BOOTIMAGE" ] || [ -c "$BOOTIMAGE" ]; then
-    if [ -f "new-boot.img" ]; then
-      echo "- Flashing new boot image"
-      flash_image new-boot.img "$BOOTIMAGE"
-      if [ $? -ne 0 ]; then
-        >&2 echo "! Flash error"
-        save_image_to_storage "new-boot.img"
-        exit 1
-      fi
-    else
-      >&2 echo "! new-boot.img missing — refusing to flash"
-      exit 1
-    fi
-  fi
+# Preflight the *produced* image before any block-device write.
+[ -s "new-boot.img" ] || {
+  >&2 echo "! Patched image missing or empty — refusing to continue"
+  exit 1
+}
+VERIFY_OUT=$(mktemp -d) || exit 1
+cp "new-boot.img" "$VERIFY_OUT/candidate.img" || exit 1
+if ! (cd "$VERIFY_OUT" && magiskboot unpack candidate.img >/dev/null 2>&1); then
+  rm -rf "$VERIFY_OUT"
+  >&2 echo "! Patched image does not unpack — refusing to flash/export"
+  exit 1
+fi
+rm -rf "$VERIFY_OUT"
 
+if [ "$FLASH_TO_DEVICE" = "true" ]; then
+  # A verified original backup from *this* patching session is required.
+  # Existing backups may be stale after an OTA / other root flash.
+  if [ "$SHOULD_BACKUP" -ne 1 ] || [ ! -s "$TMP_BACKUP" ]; then
+    >&2 echo "! No verified fresh boot backup: refusing direct flash."
+    >&2 echo "! Use offline image export and independently verify recovery."
+    exit 1
+  fi
+  if [ ! -b "$BOOTIMAGE" ] && [ ! -c "$BOOTIMAGE" ]; then
+    >&2 echo "! Target is not a block/character device: refusing flash."
+    exit 1
+  fi
+  echo "- Flashing validated boot image"
+  if ! flash_image new-boot.img "$BOOTIMAGE"; then
+    >&2 echo "! Flash failed"
+    save_image_to_storage "new-boot.img"
+    exit 1
+  fi
   echo "- Successfully Flashed!"
 else
   save_image_to_storage "new-boot.img"

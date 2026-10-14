@@ -1,0 +1,37 @@
+name: PatchNest patched module security tests
+
+on:
+  push:
+    branches:
+      - 'feature/patchnest-patched-safe-flex'
+  pull_request:
+    paths:
+      - 'module/module/kpm_verify.sh'
+      - 'module/module/service.sh'
+      - 'module/tests/kpm-signature-smoke.sh'
+      - 'module/module/patch/**'
+      - 'module/tests/backup-guard-smoke.sh'
+      - '.github/workflows/patchnest-patched-security.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-ed25519:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Test signature validation in POSIX shell and Bash
+        run: |
+          set -euo pipefail
+          dash -n module/module/kpm_verify.sh
+          dash -n module/module/service.sh
+          bash -n module/module/kpm_verify.sh
+          dash module/tests/kpm-signature-smoke.sh
+          bash module/tests/kpm-signature-smoke.sh
+          dash -n module/module/patch/backup_guard.sh
+          dash -n module/module/patch/boot_patch.sh
+          dash -n module/module/patch/boot_unpatch.sh
+          dash module/tests/backup-guard-smoke.sh
+          bash module/tests/backup-guard-smoke.sh
