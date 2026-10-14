@@ -30,11 +30,19 @@ auto_unpatch() {
         return 1
     fi
 
-    local target_slot chosen tmpdir
-    target_slot=$(getprop ro.boot.slot_suffix 2>/dev/null)
+    local target_slot chosen tmpdir target_resolved suffix byname
+    target_slot=unknown
+    target_resolved=$(readlink -f "$BOOTIMAGE" 2>/dev/null) || return 1
+    for suffix in _a _b; do
+        byname="/dev/block/by-name/boot$suffix"
+        if [ -e "$byname" ] &&
+           [ "$(readlink -f "$byname" 2>/dev/null)" = "$target_resolved" ]; then
+            target_slot=$suffix
+        fi
+    done
     case "$BOOTIMAGE" in
-        *_a) target_slot=_a ;;
-        *_b) target_slot=_b ;;
+        */boot_a) target_slot=_a ;;
+        */boot_b) target_slot=_b ;;
     esac
     case "$target_slot" in
         _a|_b) ;;
