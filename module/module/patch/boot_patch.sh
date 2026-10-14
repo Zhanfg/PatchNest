@@ -143,12 +143,20 @@ detect_root_chain() {
     local TARGET_PATH TARGET_SLOT
     TARGET_PATH=$(readlink -f "$BOOT_FILE" 2>/dev/null)
     [ -n "$TARGET_PATH" ] || TARGET_PATH="unknown"
-    TARGET_SLOT=$(getprop ro.boot.slot_suffix 2>/dev/null)
+    # Never infer the target slot from the *running* slot when patching
+    # an OTA's inactive slot. Resolve known boot_a/boot_b aliases.
+    TARGET_SLOT=unknown
+    for suffix in _a _b; do
+        byname="/dev/block/by-name/boot$suffix"
+        if [ -e "$byname" ] &&
+           [ "$(readlink -f "$byname" 2>/dev/null)" = "$TARGET_PATH" ]; then
+            TARGET_SLOT=$suffix
+        fi
+    done
     case "$BOOT_FILE" in
-        *_a) TARGET_SLOT=_a ;;
-        *_b) TARGET_SLOT=_b ;;
+        */boot_a) TARGET_SLOT=_a ;;
+        */boot_b) TARGET_SLOT=_b ;;
     esac
-    case "$TARGET_SLOT" in _a|_b) ;; *) TARGET_SLOT=unknown ;; esac
 
     # 8. ISO-ish timestamp (UTC, no colons — POSIX-safe filename suffix).
     local TAKEN_AT
