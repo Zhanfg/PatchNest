@@ -158,6 +158,13 @@ detect_root_chain() {
         */boot_b) TARGET_SLOT=_b ;;
     esac
 
+    # A backup from a different ROM generation may match the physical
+    # partition yet still be incompatible after OTA. Pin a conservative
+    # fingerprint; missing property means no automatic restoration.
+    local ROM_FINGERPRINT
+    ROM_FINGERPRINT=$(getprop ro.build.fingerprint 2>/dev/null)
+    [ -n "$ROM_FINGERPRINT" ] || ROM_FINGERPRINT=unknown
+
     # 8. ISO-ish timestamp (UTC, no colons — POSIX-safe filename suffix).
     local TAKEN_AT
     TAKEN_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -200,6 +207,7 @@ detect_root_chain() {
   "original_sha256": "$SAFE_SHA",
   "target_path": "$(json_escape "$TARGET_PATH")",
   "target_slot": "$TARGET_SLOT",
+  "rom_fingerprint": "$(json_escape "$ROM_FINGERPRINT")",
   "backup_sha256": "null",
   "backup_verified": false
 }
