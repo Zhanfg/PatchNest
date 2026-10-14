@@ -8,7 +8,7 @@ pn_manifest_field() {
     _pn_file=$1
     _pn_key=$2
     # Only schema-owned single-line string fields (not arbitrary JSON).
-    case "$_pn_key" in target_path|target_slot|backup_sha256) ;;
+    case "$_pn_key" in target_path|target_slot|backup_sha256|rom_fingerprint) ;;
         *) return 1 ;;
     esac
     _pn_value=$(sed -n "s/^[[:space:]]*\"$_pn_key\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\"[[:space:]]*,\{0,1\}[[:space:]]*$/\1/p" "$_pn_file" 2>/dev/null)
@@ -27,6 +27,12 @@ pn_verify_backup() {
     _pn_stored_target=$(pn_manifest_field "$_pn_meta" target_path) || return 1
     _pn_stored_slot=$(pn_manifest_field "$_pn_meta" target_slot) || return 1
     _pn_expected=$(pn_manifest_field "$_pn_meta" backup_sha256) || return 1
+    _pn_fingerprint=$(pn_manifest_field "$_pn_meta" rom_fingerprint) || return 1
+    [ "$_pn_fingerprint" != "unknown" ] || return 1
+    command -v getprop >/dev/null 2>&1 || return 1
+    _pn_current_fingerprint=$(getprop ro.build.fingerprint 2>/dev/null) || return 1
+    [ -n "$_pn_current_fingerprint" ] &&
+        [ "$_pn_fingerprint" = "$_pn_current_fingerprint" ] || return 1
     _pn_actual_target=$(readlink -f "$_pn_target" 2>/dev/null) || return 1
     [ "$_pn_stored_target" = "$_pn_actual_target" ] || return 1
 
