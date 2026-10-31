@@ -117,10 +117,10 @@ cmake -S ../cli -B ../cli/build/module-arm64 -G Ninja \
 cmake --build ../cli/build/module-arm64 --target kpatch --parallel
 install -m 0755 ../cli/build/module-arm64/kpatch module/bin/kpatch
 if command -v strings >/dev/null 2>&1; then
-    strings module/bin/kpatch | grep -Fxq loadv || {
+    strings module/bin/kpatch | grep -Fx loadv >/dev/null || {
         echo "ERROR: newly built CLI lacks loadv command" >&2; exit 1;
     }
-    strings module/bin/kpatch | grep -Fxq ctlv || {
+    strings module/bin/kpatch | grep -Fx ctlv >/dev/null || {
         echo "ERROR: newly built CLI lacks ctlv command" >&2; exit 1;
     }
 fi
