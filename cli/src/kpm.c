@@ -154,27 +154,29 @@ int kpm_main(int argc, char **argv)
     case 'L': {
         char wire[PN_ARGV_WIRE_MAX];
         if (argc < 3) {
-            fprintf(stderr, "loadv requires a module path\\n");
+            fprintf(stderr, "loadv requires a module path\n");
             return CLI_EXIT_USAGE;
         }
         if (pn_argv_encode((size_t)(argc - 3), (const char *const *)(argv + 3),
                            wire, sizeof(wire)) != PN_ARGV_OK) {
-            fprintf(stderr, "loadv arguments exceed the 1024-byte KPM ABI limit\\n");
+            fprintf(stderr, "loadv arguments exceed the 1024-byte KPM ABI limit\n");
             return CLI_EXIT_USAGE;
         }
+        if (!sc_ready()) return CLI_EXIT_UNSUPPORTED;
         return kpm_load(argv[2], wire);
     }
     case 'C': {
         char wire[PN_ARGV_WIRE_MAX];
         if (argc < 3) {
-            fprintf(stderr, "ctlv requires a module name\\n");
+            fprintf(stderr, "ctlv requires a module name\n");
             return CLI_EXIT_USAGE;
         }
         if (pn_argv_encode((size_t)(argc - 3), (const char *const *)(argv + 3),
                            wire, sizeof(wire)) != PN_ARGV_OK) {
-            fprintf(stderr, "ctlv arguments exceed the 1024-byte KPM ABI limit\\n");
+            fprintf(stderr, "ctlv arguments exceed the 1024-byte KPM ABI limit\n");
             return CLI_EXIT_USAGE;
         }
+        if (!sc_ready()) return CLI_EXIT_UNSUPPORTED;
         return kpm_control(argv[2], wire);
     }
     case SUPERCALL_KPM_UNLOAD:

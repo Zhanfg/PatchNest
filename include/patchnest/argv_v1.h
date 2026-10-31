@@ -79,7 +79,7 @@ static inline int pn_argv_read_decimal(const char *wire, size_t length,
     size_t value = 0, start = *pos;
     while (*pos < length && wire[*pos] >= '0' && wire[*pos] <= '9') {
         size_t digit = (size_t)(wire[*pos] - '0');
-        if (value > (maximum - digit) / 10u || digit > maximum)
+        if (digit > maximum || value > (maximum - digit) / 10u)
             return PN_ARGV_INVALID;
         value = value * 10u + digit;
         ++*pos;
