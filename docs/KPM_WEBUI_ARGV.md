@@ -14,3 +14,15 @@ to decoding with `patchnest_argv_v1.h`.
 A frontend byte/count validator mirrors the CLI's 1023-byte payload
 and 32-argument bounds; CLI/kernel validation remains authoritative.
 No secrets should be passed in these arguments (process argv may be visible).
+
+## Legacy boot replay compatibility
+
+Legacy `.args` files remain a single raw argument. The module's boot
+service and ZIP installer now invoke `kpatch kpm load FILE "RAW"` without
+inserting `--` or shell-splitting values. The shell is not asked to parse
+the raw text as command syntax. Logs report only whether args are present,
+not their contents.
+
+This does **not** enable `loadv` persistence across boots; multi-argv
+mode continues to use temporary loading until a versioned persistence
+format and recovery policy are specified.

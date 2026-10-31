@@ -174,11 +174,18 @@ for kpm in "$KPM_DIR"/*.kpm "$KPM_DIR"/*.ko "$KPM_DIR"/*.o; do
         fi
     fi
 
-    if ! kpatch kpm load "$kpm" -- "$args"; then
+    # Legacy kpm load takes exactly one raw-string argument after the path.
+    # A literal "--" would be interpreted as the payload and discard "$args".
+    if ! kpatch kpm load "$kpm" "$args"; then
         echo "[$(date)] Failed to load: $(basename "$kpm"), moving to failed/" >> "$LOG"
         mv "$kpm" "$KPM_DIR/failed/$(basename "$kpm")"
     else
-        echo "[$(date)] Loaded: $(basename "$kpm") args=[$args]" >> "$LOG"
+        # Report presence only: boot logs must not expose raw KPM arguments.
+        if [ -n "$args" ]; then
+            echo "[$(date)] Loaded: $(basename "$kpm") args=present" >> "$LOG"
+        else
+            echo "[$(date)] Loaded: $(basename "$kpm") args=none" >> "$LOG"
+        fi
     fi
 done
 

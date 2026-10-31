@@ -73,6 +73,9 @@ jobs:
             module/patch/boot_patch.sh module/patch/boot_extract.sh \
             module/patch/boot_unpatch.sh
 
+      - name: Validate legacy KPM boot argument forwarding
+        run: node tests/validate_kpm_args.js
+
       - name: Verify locale completeness
         run: |
           set -euo pipefail
