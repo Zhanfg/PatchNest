@@ -71,10 +71,14 @@ jobs:
             module/action.sh module/status.sh module/uninstall.sh \
             module/install_kpm.sh module/compile_kpm.sh \
             module/patch/boot_patch.sh module/patch/boot_extract.sh \
-            module/patch/boot_unpatch.sh
+            module/patch/boot_unpatch.sh \
+            module/tools/kpm_frontier_probe.sh
 
       - name: Validate legacy KPM boot argument forwarding
         run: node tests/validate_kpm_args.js
+
+      - name: Test read-only KPM and SUSFS capability probe
+        run: sh tests/test_kpm_frontier_probe.sh
 
       - name: Verify locale completeness
         run: |
