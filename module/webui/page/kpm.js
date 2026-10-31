@@ -1,4 +1,5 @@
 import { exec, spawn, toast } from 'kernelsu-alt';
+import { splitKpmArgvLines, buildKpmCommand } from '../kpm-argv.js';
 import { modDir, persistDir, MAX_CHUNK_SIZE, escapeShell, linkRedirect } from '../constants.js';
 import { initInfo } from '../index.js';
 import { getString } from '../language.js';
@@ -78,9 +79,18 @@ async function getKpmList() {
     return results.sort((a, b) => (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase()));
 }
 
-async function controlModule(moduleName, action) {
-    const result = await exec(`kpatch kpm ctl0 ${escapeShell(moduleName)} ${escapeShell(action)}`, { env: { PATH: `${modDir}/bin` } });
+async function controlModule(moduleName, action, structured = false) {
+    let command;
+    try {
+        command = buildKpmCommand('control', moduleName,
+            structured ? splitKpmArgvLines(action) : action, escapeShell);
+    } catch (error) {
+        toast(error.message);
+        return false;
+    }
+    const result = await exec(command, { env: { PATH: `${modDir}/bin` } });
     toast(result.errno === 0 ? result.stdout : result.stderr);
+    return result.errno === 0;
 }
 
 function forgetModule(moduleName) {
@@ -93,8 +103,15 @@ async function unloadModule(moduleName) {
     return result.errno === 0;
 }
 
-async function loadModule(modulePath) {
-    const result = await exec(`kpatch kpm load ${escapeShell(modulePath)}`, { env: { PATH: `${modDir}/bin` } });
+async function loadModule(modulePath, args = null) {
+    let command;
+    try {
+        command = buildKpmCommand('load', modulePath, args, escapeShell);
+    } catch (error) {
+        toast(error.message);
+        return false;
+    }
+    const result = await exec(command, { env: { PATH: `${modDir}/bin` } });
     return result.errno === 0;
 }
 
@@ -405,14 +422,33 @@ async function renderKpmList() {
             item.querySelector('.control').onclick = () => {
                 const dialog = document.getElementById('control-dialog');
                 const textField = dialog.querySelector('md-outlined-text-field');
+                const useArgv = dialog.querySelector('#kpm-control-argv-enabled');
+                const argvField = dialog.querySelector('#kpm-control-argv');
+                useArgv.checked = false;
+                argvField.value = '';
+                argvField.disabled = true;
+                textField.disabled = false;
+                const updateControlMode = () => {
+                    const structured = useArgv.checked;
+                    textField.disabled = structured;
+                    argvField.disabled = !structured;
+                    dialog.querySelector('.confirm').disabled = structured
+                        ? !argvField.value : !textField.value;
+                };
+                useArgv.onchange = updateControlMode;
                 dialog.querySelector('.cancel').onclick = () => dialog.close();
                 dialog.querySelector('.confirm').onclick = async () => {
-                    await controlModule(moduleName, textField.value);
+                    const ok = await controlModule(moduleName,
+                        useArgv.checked ? argvField.value : textField.value,
+                        useArgv.checked);
+                    if (!ok) return;
                     refreshKpmList();
                     initInfo();
                     textField.value = '';
+                    argvField.value = '';
                     dialog.close();
                 };
+                updateControlMode();
                 dialog.show();
             };
             const dashBtn = item.querySelector('.dashboard');
@@ -777,8 +813,21 @@ async function loadKpmFile(file, onProgress, signal) {
         if (info && info.name) {
             const dialog = document.getElementById('load-dialog');
             dialog.querySelector('#load-module-msg').textContent = getString('msg_module_loaded', info.name);
-            const checkbox = dialog.querySelector('md-checkbox');
+            const checkbox = dialog.querySelector('md-checkbox:not(#kpm-load-argv-enabled)');
+            const useArgv = dialog.querySelector('#kpm-load-argv-enabled');
+            const argvField = dialog.querySelector('#kpm-load-argv');
             checkbox.checked = false;
+            checkbox.disabled = false;
+            useArgv.checked = false;
+            argvField.disabled = true;
+            argvField.value = '';
+            useArgv.onchange = () => {
+                argvField.disabled = !useArgv.checked;
+                // Custom runtime arguments have no persistent boot replay contract.
+                // Prevent silently reloading with different parameters on reboot.
+                checkbox.checked = useArgv.checked;
+                checkbox.disabled = useArgv.checked;
+            };
 
             dialog.querySelector('.cancel').onclick = () => {
                 dialog.close();
@@ -790,7 +839,8 @@ async function loadKpmFile(file, onProgress, signal) {
                 // Both sides of the upload flow must use the SAME safe name to avoid
                 // a TOCTOU between upload() and loadModule().
                 const safeFileName = sanitizeFilename(file.name) + '.kpm';
-                const success = await loadModule(`${modDir}/tmp/${safeFileName}`);
+                const success = await loadModule(`${modDir}/tmp/${safeFileName}`,
+                    useArgv.checked ? splitKpmArgvLines(argvField.value) : null);
                 if (success) {
                     toast(getString('msg_successfully_loaded', info.name));
                     refreshKpmList();
@@ -873,7 +923,14 @@ export function initKPMPage() {
     const controlDialog = document.getElementById('control-dialog');
     const controlTextField = controlDialog.querySelector('md-outlined-text-field');
     controlTextField.addEventListener('input', () => {
-        controlDialog.querySelector('.confirm').disabled = !controlTextField.value;
+        const vectorMode = controlDialog.querySelector('#kpm-control-argv-enabled').checked;
+        if (!vectorMode) controlDialog.querySelector('.confirm').disabled = !controlTextField.value;
+    });
+    controlDialog.querySelector('#kpm-control-argv').addEventListener('input', () => {
+        if (controlDialog.querySelector('#kpm-control-argv-enabled').checked) {
+            controlDialog.querySelector('.confirm').disabled =
+                !controlDialog.querySelector('#kpm-control-argv').value;
+        }
     });
 
     document.getElementById('load').onclick = () => uploadAndLoadModule();
