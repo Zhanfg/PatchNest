@@ -245,16 +245,10 @@ cp "$TMPDIR/module.prop" "$KPM_ZIP_DIR/${MOD_ID}.prop"
 # Load module immediately if requested
 if [ "$MOD_AUTOLOAD" = "true" ]; then
     echo "- Loading module..."
-    # The double-dash ends kpatch's option parsing, so any leading
-    # '-' in $MOD_ARGS (or values that would otherwise be parsed as
-    # options) is preserved verbatim. $MOD_ARGS is itself quoted
-    # below so an args string with whitespace is passed as a single
-    # argument to kpatch kpm load.
-    ARGS_OPT=""
-    if [ -n "$MOD_ARGS" ]; then
-        ARGS_OPT="-- $MOD_ARGS"
-    fi
-    kpatch kpm load "$KPM_DIR/${MOD_ID}.kpm" $ARGS_OPT 2>&1
+    # The CLI does not parse flags here; it consumes exactly one raw-string
+    # argument after the KPM path. Quotes preserve leading '-' and spaces.
+    # Do not inject a literal "--" or expand this value as shell words.
+    kpatch kpm load "$KPM_DIR/${MOD_ID}.kpm" "$MOD_ARGS" 2>&1
     if [ $? -eq 0 ]; then
         log "Module $MOD_ID loaded successfully"
         echo "- Successfully installed and loaded: $MOD_NAME v$MOD_VERSION"
