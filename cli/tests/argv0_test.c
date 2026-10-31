@@ -13,6 +13,7 @@ int patchnest_cli_main(int argc, char **argv);
 uint32_t version(void) { return 0; }
 int hello(void) { return 0; }
 int event_main(int argc, char **argv) { (void)argc; (void)argv; return 0; }
+int eventv_main(int argc, char **argv) { (void)argc; (void)argv; return 0; }
 void kpv(void) {}
 void kv(void) {}
 void bootlog(void) {}
