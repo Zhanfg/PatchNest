@@ -30,4 +30,11 @@ ${CC:-cc} \
   -Wl,--wrap=syscall \
   -o "$work/public1158-profile"
 
+${CC:-cc} -std=c11 -D_GNU_SOURCE -Wall -Wextra -Werror \
+  -I"$repo_root/../include" \
+  "$repo_root/../tests/argv_v1_test.c" \
+  -o "$work/argv-v1"
+
+"$work/argv-v1"
+
 "$work/public1158-profile"

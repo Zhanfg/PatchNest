@@ -19,6 +19,7 @@ extern "C"
 
     int hello();
     int event_main(int argc, char **argv);
+    int eventv_main(int argc, char **argv);
     void kpv();
     void kv();
 

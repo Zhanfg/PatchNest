@@ -18,6 +18,7 @@
 #include <error.h>
 
 #include "cli_status.h"
+#include "../../include/patchnest/argv_v1.h"
 #include "supercall.h"
 
 #define PUBLIC1158_SUPERCALL_KPM_EVENT 0x1150L
@@ -99,6 +100,25 @@ int event_main(int argc, char **argv)
                 (long)event, source, args));
     return cli_report_rc("event", rc);
 #endif
+}
+
+int eventv_main(int argc, char **argv)
+{
+    char wire[PN_ARGV_WIRE_MAX];
+    char *legacy[3];
+    if (argc < 2 || !argv || !argv[0] || !argv[1]) {
+        fprintf(stderr, "eventv requires EVENT SOURCE [ARG ...]\\n");
+        return CLI_EXIT_USAGE;
+    }
+    if (pn_argv_encode((size_t)(argc - 2), (const char *const *)(argv + 2),
+                       wire, sizeof(wire)) != PN_ARGV_OK) {
+        fprintf(stderr, "eventv arguments exceed the 1024-byte KPM ABI limit\\n");
+        return CLI_EXIT_USAGE;
+    }
+    legacy[0] = argv[0];
+    legacy[1] = argv[1];
+    legacy[2] = wire;
+    return event_main(3, legacy);
 }
 
 void kpv()

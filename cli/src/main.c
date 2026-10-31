@@ -43,7 +43,8 @@ static void usage(int status)
                 "kpver              Print KernelPatch version.\n"
                 "kver               Print Kernel version.\n"
                 "kpm                KernelPatch Module manager.\n"
-                "event              Dispatch a reviewed KPM lifecycle event when supported.\n"
+                "event              Legacy single-string event dispatch.\n"
+                "eventv             Dispatch event with versioned argv fields.\n"
                 "exclude_set        Manage the exclude list.\n"
                 "exclude_get        Get exclude list status.\n"
                 "rehook             Set rehook state when supported by this ABI.\n"
@@ -75,6 +76,7 @@ int main(int argc, char **argv)
         { "", 'K' },
         { "kpm", 'k' },
         { "event", 'E' },
+        { "eventv", 'V' },
         { "exclude_set", 'e' },
         { "exclude_get", 'g' },
         { "rehook", 'r' },
@@ -112,6 +114,8 @@ int main(int argc, char **argv)
         return kpm_main(argc - 1, argv + 1);
     case 'E':
         return event_main(argc - 2, argv + 2);
+    case 'V':
+        return eventv_main(argc - 2, argv + 2);
     case 'e':
         return kpexclude_set_main(argc - 2, argv + 2);
     case 'g':
