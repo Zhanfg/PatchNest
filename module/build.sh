@@ -96,11 +96,35 @@ if [[ ! -f "module/bin/kpimg" || ! -f "module/bin/kptools" ]]; then
     mv module/bin/kptools-android module/bin/kptools
 fi
 
-# Fetch the PatchNest user-space tool.
-if [[ ! -f "module/bin/kpatch" ]]; then
-    download_assets "Zhanfg/PatchNest" "$VERSION_PATCHNEST" "module/bin" "kpatch-android"
-    mv module/bin/kpatch-android module/bin/kpatch
+# Build the KPM manager CLI from this exact source revision.
+# A pinned 0.13.5-2 binary predates loadv/ctlv, so bundling that binary
+# alongside the new WebUI would produce a broken feature despite green UI tests.
+# Do not silently ship a stale binary when NDK is unavailable.
+if [[ -z "${ANDROID_NDK_HOME:-}" ]]; then
+    echo "ERROR: ANDROID_NDK_HOME is required to build the matching PatchNest CLI" >&2
+    exit 1
 fi
+TOOLCHAIN="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake"
+if [[ ! -f "$TOOLCHAIN" ]]; then
+    echo "ERROR: Android NDK CMake toolchain not found: $TOOLCHAIN" >&2
+    exit 1
+fi
+cmake -S ../cli -B ../cli/build/module-arm64 -G Ninja \
+    -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DANDROID_PLATFORM=android-33 \
+    -DANDROID_ABI=arm64-v8a
+cmake --build ../cli/build/module-arm64 --target kpatch --parallel
+install -m 0755 ../cli/build/module-arm64/kpatch module/bin/kpatch
+if command -v strings >/dev/null 2>&1; then
+    strings module/bin/kpatch | grep -Fx loadv >/dev/null || {
+        echo "ERROR: newly built CLI lacks loadv command" >&2; exit 1;
+    }
+    strings module/bin/kpatch | grep -Fx ctlv >/dev/null || {
+        echo "ERROR: newly built CLI lacks ctlv command" >&2; exit 1;
+    }
+fi
+echo "Bundled kpatch CLI from current source revision $(git rev-parse --short HEAD)"
 
 # Fetch and extract magiskboot from the pinned official Magisk APK.
 if [[ ! -f "module/bin/magiskboot" ]]; then

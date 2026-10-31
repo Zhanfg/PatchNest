@@ -447,6 +447,12 @@
             <div slot="content">
                 <div data-i18n="label_input_control_parameters">Input control parameters:</div>
                 <md-outlined-text-field label="Parameters" data-i18n="label_parameters"></md-outlined-text-field>
+                <label class="checkbox-item">
+                    <md-checkbox id="kpm-control-argv-enabled"></md-checkbox>
+                    <span>Multiple arguments / 多参数（KPM 需支持 PNARGV1）</span>
+                </label>
+                <md-outlined-text-field id="kpm-control-argv" type="textarea" rows="3"
+                    label="One argument per line / 每行一个参数" disabled></md-outlined-text-field>
             </div>
             <div slot="actions">
                 <md-text-button class="cancel" data-i18n="button_cancel">Cancel</md-text-button>
@@ -462,6 +468,12 @@
                     <md-checkbox></md-checkbox>
                     <span data-i18n="label_load_temporarily">Load temporarily</span>
                 </label>
+                <label class="checkbox-item">
+                    <md-checkbox id="kpm-load-argv-enabled"></md-checkbox>
+                    <span>Multiple arguments / 多参数（仅临时加载）</span>
+                </label>
+                <md-outlined-text-field id="kpm-load-argv" type="textarea" rows="3"
+                    label="One argument per line / 每行一个参数" disabled></md-outlined-text-field>
             </div>
             <div slot="actions">
                 <md-text-button class="cancel" data-i18n="button_cancel">Cancel</md-text-button>
