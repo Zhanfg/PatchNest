@@ -9,6 +9,7 @@
 #include "cli_status.h"
 #include "kpatch.h"
 #include "supercall.h"
+#include "../../include/patchnest/argv_v1.h"
 
 #define PUBLIC1158_SUPERCALL_KPM_EVENT 0x1150L
 
@@ -17,6 +18,7 @@ static const char *last_key;
 static long last_event;
 static const char *last_source;
 static const char *last_args;
+static char saved_event_wire[1024];
 
 long __wrap_syscall(long number, ...)
 {
@@ -40,6 +42,8 @@ long __wrap_syscall(long number, ...)
         last_event = va_arg(ap, long);
         last_source = va_arg(ap, const char *);
         last_args = va_arg(ap, const char *);
+        assert(last_args && strlen(last_args) < sizeof(saved_event_wire));
+        strcpy(saved_event_wire, last_args);
         va_end(ap);
         return 0;
     }
@@ -84,6 +88,16 @@ int main(void)
     assert(last_event == 3);
     assert(last_source && strcmp(last_source, "PatchNest") == 0);
     assert(last_args && strcmp(last_args, "boot") == 0);
+
+    char *eventv_args[] = { "POST_FS_DATA", "PatchNest", "reason=boot", "with spaces" };
+    struct pn_argv_slice slices[3] = {{0}};
+    before_event = syscall_count;
+    assert(eventv_main(4, eventv_args) == CLI_EXIT_OK);
+    assert(syscall_count == before_event + 3); /* version probe + hello + event */
+    assert(last_event == 3);
+    assert(pn_argv_decode(saved_event_wire, slices, 3) == 2);
+    assert(slices[0].length == 11 && !memcmp(slices[0].data, "reason=boot", 11));
+    assert(slices[1].length == 11 && !memcmp(slices[1].data, "with spaces", 11));
 
     char *bad_event[] = { "NOT_A_REAL_EVENT" };
     before_event = syscall_count;

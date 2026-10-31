@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include "cli_status.h"
+#include "../../include/patchnest/argv_v1.h"
 #include "kpm.h"
 #include "supercall.h"
 
@@ -87,8 +88,10 @@ static void usage(int status)
                 "KPatch-Next Module command set.\n"
                 "\n"
                 "help                           Print this help message. \n"
-                "load <KPM_PATH> [KPM_ARGS]     Load KPatch-Next Module with KPM_PATH and KPM_ARGS.\n"
-                "ctl0 <KPM_NAME> <CTL_ARGS>     Control KPatch-Next Module named KPM_NAME with CTL_ARGS.\n"
+                "load <KPM_PATH> [KPM_ARGS]     Legacy single-string load, unchanged.\n"
+                "loadv <KPM_PATH> [ARG ...]    Load with versioned, distinct argv fields.\n"
+                "ctl0 <KPM_NAME> <CTL_ARGS>     Legacy single-string control, unchanged.\n"
+                "ctlv <KPM_NAME> [ARG ...]     Control with versioned, distinct argv fields.\n"
                 "unload <KPM_NAME>              Unload KPatch-Next Module named KPM_NAME.\n"
                 "num                            Get the number of modules that have been loaded.\n"
                 "list                           List names of all loaded modules.\n"
@@ -111,7 +114,9 @@ int kpm_main(int argc, char **argv)
         int cmd;
     } cmd_arr[] = {
         { "load", SUPERCALL_KPM_LOAD },
+        { "loadv", 'L' },
         { "ctl0", SUPERCALL_KPM_CONTROL },
+        { "ctlv", 'C' },
         { "unload", SUPERCALL_KPM_UNLOAD },
         { "num", SUPERCALL_KPM_NUMS },
         { "list", SUPERCALL_KPM_LIST },
@@ -146,6 +151,34 @@ int kpm_main(int argc, char **argv)
             return CLI_EXIT_USAGE;
         }
         return kpm_control(argv[2], argv[3]);
+    case 'L': {
+        char wire[PN_ARGV_WIRE_MAX];
+        if (argc < 3) {
+            fprintf(stderr, "loadv requires a module path\n");
+            return CLI_EXIT_USAGE;
+        }
+        if (pn_argv_encode((size_t)(argc - 3), (const char *const *)(argv + 3),
+                           wire, sizeof(wire)) != PN_ARGV_OK) {
+            fprintf(stderr, "loadv arguments exceed the 1024-byte KPM ABI limit\n");
+            return CLI_EXIT_USAGE;
+        }
+        if (!sc_ready()) return CLI_EXIT_UNSUPPORTED;
+        return kpm_load(argv[2], wire);
+    }
+    case 'C': {
+        char wire[PN_ARGV_WIRE_MAX];
+        if (argc < 3) {
+            fprintf(stderr, "ctlv requires a module name\n");
+            return CLI_EXIT_USAGE;
+        }
+        if (pn_argv_encode((size_t)(argc - 3), (const char *const *)(argv + 3),
+                           wire, sizeof(wire)) != PN_ARGV_OK) {
+            fprintf(stderr, "ctlv arguments exceed the 1024-byte KPM ABI limit\n");
+            return CLI_EXIT_USAGE;
+        }
+        if (!sc_ready()) return CLI_EXIT_UNSUPPORTED;
+        return kpm_control(argv[2], wire);
+    }
     case SUPERCALL_KPM_UNLOAD:
         if (argc < 3) {
             fprintf(stderr, "module name does not exist\n");

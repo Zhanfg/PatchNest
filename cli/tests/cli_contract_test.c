@@ -4,11 +4,13 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "cli_status.h"
 #include "kpatch.h"
 #include "kpextension.h"
 #include "kpm.h"
+#include "../../include/patchnest/argv_v1.h"
 #include "uapi/scdefs.h"
 
 const char *program_name = "patchnest-test";
@@ -18,6 +20,9 @@ static int kstorage_read_errno;
 static int kpm_nums_errno;
 static int hello_errno;
 static long hello_result = SUPERCALL_HELLO_MAGIC;
+static char last_kpm_args[1024];
+static int kpm_load_calls;
+static int kpm_ctl_calls;
 
 static long command_id(long packed)
 {
@@ -51,6 +56,31 @@ long __wrap_syscall(long number, ...)
             return -1;
         }
         return hello_result;
+    }
+
+    if (cmd == SUPERCALL_KPM_LOAD) {
+        const char *path = va_arg(ap, const char *);
+        const char *args = va_arg(ap, const char *);
+        (void)va_arg(ap, void *);
+        va_end(ap);
+        assert(path && strcmp(path, "/data/example.kpm") == 0);
+        assert(args && strlen(args) < sizeof(last_kpm_args));
+        strcpy(last_kpm_args, args);
+        ++kpm_load_calls;
+        return 0;
+    }
+
+    if (cmd == SUPERCALL_KPM_CONTROL) {
+        const char *name = va_arg(ap, const char *);
+        const char *args = va_arg(ap, const char *);
+        (void)va_arg(ap, char *);
+        (void)va_arg(ap, long);
+        va_end(ap);
+        assert(name && strcmp(name, "demo") == 0);
+        assert(args && strlen(args) < sizeof(last_kpm_args));
+        strcpy(last_kpm_args, args);
+        ++kpm_ctl_calls;
+        return 0;
     }
 
     if (cmd == SUPERCALL_KPM_NUMS) {
@@ -200,6 +230,42 @@ static void test_kpm_num_preserves_bionic_errno(void)
     assert(kpm_nums() == CLI_EXIT_OK);
 }
 
+static void test_vector_arguments_reach_kernel_boundary(void)
+{
+    char *load[] = { "kpm", "loadv", "/data/example.kpm", "mode=fast", "two words", "" };
+    char *control[] = { "kpm", "ctlv", "demo", "action=sync", "retry=2" };
+    char *legacy[] = { "kpm", "load", "/data/example.kpm", "raw string stays raw" };
+    char *invalid[] = { "kpm", "loadv", "/data/example.kpm", "x" };
+    char huge[1024];
+    struct pn_argv_slice slices[4] = {{0}};
+    memset(huge, 'X', sizeof(huge)-1);
+    huge[sizeof(huge)-1] = '\0';
+    invalid[3] = huge;
+    assert(kpm_main(4, invalid) == CLI_EXIT_USAGE);
+    assert(kpm_load_calls == 0);
+
+    assert(kpm_main(6, load) == CLI_EXIT_OK);
+    assert(kpm_load_calls == 1);
+    assert(pn_argv_decode(last_kpm_args, slices, 4) == 3);
+    assert(slices[0].length == 9 && !memcmp(slices[0].data, "mode=fast", 9));
+    assert(slices[1].length == 9 && !memcmp(slices[1].data, "two words", 9));
+    assert(slices[2].length == 0);
+
+    assert(kpm_main(5, control) == CLI_EXIT_OK);
+    assert(kpm_ctl_calls == 1);
+    assert(pn_argv_decode(last_kpm_args, slices, 4) == 2);
+    assert(slices[0].length == 11 && !memcmp(slices[0].data, "action=sync", 11));
+
+    assert(kpm_main(4, legacy) == CLI_EXIT_OK);
+    assert(kpm_load_calls == 2);
+    assert(strcmp(last_kpm_args, "raw string stays raw") == 0);
+
+    hello_result = 0x11581158L;
+    assert(kpm_main(6, load) == CLI_EXIT_UNSUPPORTED);
+    assert(kpm_load_calls == 2);
+    hello_result = SUPERCALL_HELLO_MAGIC;
+}
+
 int main(void)
 {
     test_exit_mapping_is_stable();
@@ -210,6 +276,7 @@ int main(void)
     test_positive_mutation_return_is_success();
     test_mutation_aborts_when_pre_read_fails();
     test_kpm_num_preserves_bionic_errno();
+    test_vector_arguments_reach_kernel_boundary();
     puts("cli contract tests: PASS");
     return 0;
 }
