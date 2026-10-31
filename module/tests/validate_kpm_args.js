@@ -17,10 +17,10 @@ assert(installLoad, 'installer must forward exactly one raw KPM args string');
 assert(!service.includes('args=[$args]'), 'raw arguments must not leak into boot logs');
 
 function invoke(command, env) {
-  const script = 'kpatch() { printf "%s\\n" "$#"; printf "<%s>\\n" "$@"; }\\n' + command;
+  const script = 'kpatch() { printf "%s\\n" "$#"; printf "<%s>\\n" "$@"; }\n' + command;
   const res = cp.spawnSync('/bin/sh', ['-c', script], { encoding: 'utf8', env: { ...process.env, ...env } });
   assert.equal(res.status, 0, res.stderr);
-  return res.stdout.trim().split('\\n');
+  return res.stdout.trim().split('\n');
 }
 for (const raw of ['-a two words "quoted" \'single\'', '', 'αβγ snow 雪']) {
   const expected = ['4', '<kpm>', '<load>', '</tmp/demo.kpm>', '<' + raw + '>'];
