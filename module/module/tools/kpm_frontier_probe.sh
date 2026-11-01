@@ -85,13 +85,51 @@ if [ "$susfs_lkm" = observed ] && [ "$kernelpatch_lkm" = observed ]; then
     coexistence=multiple_lkms_observed_unverified
 fi
 
+# Observable procfs interfaces; presence is not a permission or ABI handshake.
+# Never write any control node or dump path/rule contents.
+susfs_node_state() {
+    if [ -e "$(fs_path "/proc/$1")" ]; then
+        printf '%s' observed
+    else
+        printf '%s' not_observed
+    fi
+}
+susfs_path=$(susfs_node_state susfs_path)
+susfs_kstat=$(susfs_node_state susfs_kstat)
+susfs_open_redirect=$(susfs_node_state susfs_open_redirect)
+susfs_hide_mounts=$(susfs_node_state susfs_hide_mounts)
+susfs_hide_modules=$(susfs_node_state susfs_hide_modules)
+susfs_map=$(susfs_node_state susfs_map)
+susfs_opath=$(susfs_node_state susfs_opath)
+
+btf_vmlinux=not_observed
+if [ -r "$(fs_path /sys/kernel/btf/vmlinux)" ]; then
+    btf_vmlinux=observed
+fi
+selinux_enforcing=unknown
+if [ -r "$(fs_path /sys/fs/selinux/enforce)" ]; then
+    case "$(sed -n '1p' "$(fs_path /sys/fs/selinux/enforce)" 2>/dev/null)" in
+        0) selinux_enforcing=0 ;;
+        1) selinux_enforcing=1 ;;
+    esac
+fi
+
 printf '%s\n' \
-    "patchnest_probe=KPM_FRONTIER_V1" \
+    "patchnest_probe=KPM_FRONTIER_V2" \
     "kernel_release=$release" \
     "kmi=$kmi" \
     "kmi_signal=$kmi_signal" \
     "susfs_lkm_build_target=$susfs_lkm_build_target" \
     "susfs_control=$susfs_control" \
+    "susfs_path=$susfs_path" \
+    "susfs_kstat=$susfs_kstat" \
+    "susfs_open_redirect=$susfs_open_redirect" \
+    "susfs_hide_mounts=$susfs_hide_mounts" \
+    "susfs_hide_modules=$susfs_hide_modules" \
+    "susfs_map=$susfs_map" \
+    "susfs_opath=$susfs_opath" \
+    "btf_vmlinux=$btf_vmlinux" \
+    "selinux_enforcing=$selinux_enforcing" \
     "susfs_lkm=$susfs_lkm" \
     "kernelpatch_lkm=$kernelpatch_lkm" \
     "module_loading_policy=$module_loading_policy" \

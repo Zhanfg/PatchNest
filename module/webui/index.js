@@ -41,6 +41,7 @@ import { setupRoute } from './route.js';
 import { getString, loadTranslations } from './language.js';
 import { modDir, persistDir, escapeShell, linkRedirect, getMaxChunkSize } from './constants.js';
 import { sanitizeUrl } from './utils.js';
+import { initBackendDiagnosis } from './backend-status.js';
 // NOTE: PR3 deferred this to a future iteration. The 6 page modules
 // below are eagerly imported because switching to dynamic import()
 // would require changing switchPage() in route.js to handle a promise.
@@ -128,6 +129,7 @@ export async function initInfo() {
             }
         }
     } catch (_) {}
+    initBackendDiagnosis();
 }
 
 const VALID_REBOOT_REASONS = new Set(['', 'recovery', 'bootloader', 'download', 'edl']);
