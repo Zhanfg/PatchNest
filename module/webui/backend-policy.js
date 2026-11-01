@@ -47,13 +47,13 @@ export function parseFrontierReport(raw) {
     for (const line of lines) {
         if (!line) continue;
         const match = /^([a-z0-9_]+)=([A-Za-z0-9_.:+-]{1,160})$/.exec(line);
-        if (!match || !keys.has(match[1]) || Object.hasOwn(data, match[1])) {
+        if (!match || !keys.has(match[1]) || Object.prototype.hasOwnProperty.call(data, match[1])) {
             throw new Error('Malformed or duplicate probe field');
         }
         data[match[1]] = match[2];
     }
     for (const key of keys) {
-        if (!Object.hasOwn(data, key)) throw new Error('Missing field: ' + key);
+        if (!Object.prototype.hasOwnProperty.call(data, key)) throw new Error('Missing field: ' + key);
     }
     oneOf(data.patchnest_probe, [FRONTIER_PROTOCOL], 'patchnest_probe');
     oneOf(data.kmi_signal, ['release_tag_match', 'unresolved'], 'kmi_signal');
