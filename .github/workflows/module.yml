@@ -97,6 +97,11 @@ jobs:
           done
           exit "$fail"
 
+      - name: Verify backend policy source is packaged
+        run: |
+          test -s module/tools/kpm_frontier_probe.sh
+          test -s webui/backend-policy.js
+
       - name: Test and build WebUI
         run: |
           pnpm --dir webui install --frozen-lockfile

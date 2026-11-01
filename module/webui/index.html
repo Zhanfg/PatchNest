@@ -157,6 +157,13 @@
                         <md-filter-chip data-filter="event" data-i18n="filter_with_event">With event</md-filter-chip>
                     </div>
                     <div id="kpm-hero" class="kpm-hero hidden" role="status" aria-live="polite"></div>
+                    <div class="card info-card content-padding" id="backend-diagnostics">
+                        <div class="info">
+                            <div slot="title">Backend / SUSFS · 只读诊断</div>
+                            <div slot="detail" id="backend-diagnostics-summary" role="status" aria-live="polite">能力未验证</div>
+                        </div>
+                        <md-text-button id="backend-diagnostics-refresh" aria-label="Refresh backend diagnosis">刷新状态</md-text-button>
+                    </div>
                     <div class="module-list content-padding fab-padding" id="kpm-list"></div>
                     <div class="empty-list" id="kpm-empty-msg" data-i18n="msg_no_module_loaded">No module loaded</div>
                 </div>
