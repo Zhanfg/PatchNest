@@ -66,8 +66,9 @@ describe('PatchNest backend policy v1', () => {
         expect(() => parseFrontierReport(valid.replace('kpm_abi=unverified', 'kpm_abi=verified'))).toThrow();
         expect(() => parseFrontierReport(valid.replace('syscall_45_ownership=unverified', 'syscall_45_ownership=none'))).toThrow();
         expect(() => parseFrontierReport(valid.replace('susfs_path=not_observed', 'susfs_path=observed'))).toThrow();
-        expect(() => parseFrontierReport(valid.replace('kmi=android15-6.6', 'kmi=android14-6.1'))).not.toThrow(); // Different tagged candidate is still only a claim.
+        expect(() => parseFrontierReport(valid.replace('kmi=android15-6.6', 'kmi=android14-6.1'))).toThrow();
         expect(() => parseFrontierReport(valid.replace('kmi_signal=release_tag_match', 'kmi_signal=unresolved'))).toThrow();
+        expect(() => parseFrontierReport(valid.replace('kernel_release=6.6.147-android15-9-gki', 'kernel_release=6.6.147-custom'))).toThrow();
         expect(() => parseFrontierReport(valid + 'unexpected=foo\n')).toThrow();
         expect(() => parseFrontierReport(valid + '\0')).toThrow();
         expect(() => parseFrontierReport(valid.repeat(200))).toThrow();

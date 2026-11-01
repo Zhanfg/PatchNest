@@ -25,6 +25,15 @@ const allowedKmi = new Set([
     'android16-6.12', 'android17-6.18',
 ]);
 
+// Independently cross-check the shell's candidate KMI against the kernel
+// release text. A parsed field is not a trusted ABI attestation.
+function expectedTaggedKmi(release) {
+    const match = /^(5\.10|5\.15|6\.1|6\.6|6\.12|6\.18)\.[0-9]+-android(12|13|14|15|16|17)-[A-Za-z0-9._+:-]+$/.exec(release);
+    if (!match) return 'unresolved';
+    const candidate = 'android' + match[2] + '-' + match[1];
+    return allowedKmi.has(candidate) ? candidate : 'unresolved';
+}
+
 function oneOf(value, choices, key) {
     if (!choices.includes(value)) throw new Error('Invalid field: ' + key);
 }
@@ -49,6 +58,9 @@ export function parseFrontierReport(raw) {
     oneOf(data.patchnest_probe, [FRONTIER_PROTOCOL], 'patchnest_probe');
     oneOf(data.kmi_signal, ['release_tag_match', 'unresolved'], 'kmi_signal');
     if (!allowedKmi.has(data.kmi)) throw new Error('Invalid KMI');
+    if (data.kmi !== expectedTaggedKmi(data.kernel_release)) {
+        throw new Error('KMI does not match observed kernel release');
+    }
     if ((data.kmi === 'unresolved') !== (data.kmi_signal === 'unresolved')) {
         throw new Error('Inconsistent KMI evidence');
     }
