@@ -80,6 +80,9 @@ jobs:
       - name: Test read-only KPM and SUSFS capability probe
         run: sh tests/test_kpm_frontier_probe.sh
 
+      - name: Test module ABI pairing
+        run: bash tests/test_abi_pairing.sh
+
       - name: Verify locale completeness
         run: |
           set -euo pipefail
