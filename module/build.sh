@@ -114,16 +114,16 @@ cmake -S ../cli -B ../cli/build/module-arm64 -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
     -DANDROID_PLATFORM=android-33 \
     -DANDROID_ABI=arm64-v8a
-cmake --build ../cli/build/module-arm64 --target kpatch --parallel
-install -m 0755 ../cli/build/module-arm64/kpatch module/bin/kpatch
-if command -v strings >/dev/null 2>&1; then
-    strings module/bin/kpatch | grep -Fx loadv >/dev/null || {
-        echo "ERROR: newly built CLI lacks loadv command" >&2; exit 1;
-    }
-    strings module/bin/kpatch | grep -Fx ctlv >/dev/null || {
-        echo "ERROR: newly built CLI lacks ctlv command" >&2; exit 1;
-    }
-fi
+# The pinned KernelPatch-Public core uses the Public1158 supercall ABI.
+cmake --build ../cli/build/module-arm64 --target kpatch-public1158 --parallel
+install -m 0755 ../cli/build/module-arm64/kpatch-public1158 module/bin/kpatch
+bash check-abi-pairing.sh module/bin/kpimg module/bin/kpatch
+strings module/bin/kpatch | grep -Fx loadv >/dev/null || {
+    echo "ERROR: newly built CLI lacks loadv command" >&2; exit 1;
+}
+strings module/bin/kpatch | grep -Fx ctlv >/dev/null || {
+    echo "ERROR: newly built CLI lacks ctlv command" >&2; exit 1;
+}
 echo "Bundled kpatch CLI from current source revision $(git rev-parse --short HEAD)"
 
 # Fetch and extract magiskboot from the pinned official Magisk APK.
